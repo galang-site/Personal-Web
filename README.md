@@ -66,6 +66,8 @@ python3 -m http.server 8000
 ```
 Then open `http://localhost:8000` for the public site and
 `http://localhost:8000/admin.html` to log in and try editing something.
+(Locally you still need the `.html` — the clean `/admin` URL only works once
+deployed on Vercel, via `vercel.json`.)
 
 ## 6. Push to GitHub
 
@@ -90,9 +92,10 @@ git push -u origin main
    Domains**.
 
 Once deployed, your site is live at `your-project.vercel.app`, and the admin
-panel is at `your-project.vercel.app/admin.html`. Log in with the account you
-created in step 3, and any change you save appears on the public site
-immediately — no rebuild or redeploy needed, since the public page reads
+panel is at `your-project.vercel.app/admin` (the included `vercel.json` gives
+you the clean URL without `.html`). Log in with the account you created in
+step 3, and any change you save appears on the public site immediately — no
+rebuild or redeploy needed, since the public page reads
 straight from Supabase.
 
 ## Notes
