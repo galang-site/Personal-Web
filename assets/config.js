@@ -4,5 +4,5 @@
 // The anon key is safe to expose in frontend code — it's protected by
 // the Row Level Security policies defined in supabase/schema.sql.
 // =====================================================================
-window.SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-window.SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+window.SUPABASE_URL = "https://qvbcbrellroxhgfgbkbp.supabase.co";
+window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2YmNicmVsbHJveGhnZmdia2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MTc1NTgsImV4cCI6MjEwMTQ5MzU1OH0.aGyoClMjqW2Pj-nGXSt3D-xHEgcvmOy9OiaNPVcEsjQ";
