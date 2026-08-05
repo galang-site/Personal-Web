@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galang Nur Aji Pamungkas — Cost Estimating Coordinator</title>
+<meta name="description" content="Personal site — EPCC cost estimation, project work, leadership, and knowledge sharing.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="navbar wrap">
+    <div class="brand" id="brand"><span class="mark"></span>Loading…</div>
+    <div class="tabs" id="tabs"></div>
+    <div class="nav-cta">
+      <a class="btn ghost" id="navResume" href="#" target="_blank">Résumé</a>
+      <button class="btn primary" data-goto="contact">Get in Touch</button>
+      <button class="nav-toggle" id="navToggle">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- HOME -->
+<div class="tabpanel active" data-panel="home">
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="wrap hero-grid">
+      <div>
+        <span class="hero-badge"><span class="dot"></span><span id="heroBadgeText"></span></span>
+        <h1 id="heroName"></h1>
+        <p class="lead" id="heroTagline"></p>
+        <div class="hero-cta">
+          <button class="btn primary" data-goto="projects">View Work</button>
+          <button class="btn ghost" data-goto="contact">Let's Talk</button>
+        </div>
+        <div class="hero-meta" id="heroMeta"></div>
+      </div>
+      <div class="hero-photo" id="heroPhoto"><span class="initials">GP</span></div>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="stat-row" id="statRow"></div></div>
+
+  <div class="home-section">
+    <div class="wrap">
+      <div class="press-card">
+        <span class="press-label" id="pressLabel">Worked with</span>
+        <div class="press-names" id="pressNames"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="home-head">
+        <div><span class="eyebrow">Knowledge Sharing</span><h2>Recent Writing</h2></div>
+        <button class="btn text" data-goto="articles">All writing →</button>
+      </div>
+      <div class="feed-grid" id="homeFeed"></div>
+    </div>
+  </div>
+
+  <div class="home-section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="home-head">
+        <div><span class="eyebrow">Featured</span><h2>A Project Worth Mentioning</h2></div>
+        <button class="btn text" data-goto="projects">All projects →</button>
+      </div>
+      <div class="spotlight" id="homeSpotlight"></div>
+    </div>
+  </div>
+
+  <div class="home-section" style="padding-top:0;">
+    <div class="wrap"><div class="quote-card" id="homeQuote"></div></div>
+  </div>
+
+  <div class="home-section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="newsletter-card">
+        <div>
+          <h3 id="newsletterTitle"></h3>
+          <p id="newsletterText"></p>
+        </div>
+        <form class="newsletter-form" onsubmit="return false;">
+          <input type="email" placeholder="Your email address" required>
+          <button type="submit">Subscribe →</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="tabpanel" data-panel="about">
+  <section class="page">
+    <div class="wrap about-grid">
+      <div>
+        <span class="eyebrow">About</span>
+        <h2 class="section-title">A little more about me</h2>
+        <div class="about-text" id="aboutText"></div>
+      </div>
+      <div>
+        <div class="skill-group"><h4>Technical / EPC</h4><div class="tags" id="skillsTechnical"></div></div>
+        <div class="skill-group"><h4>Leadership & Management</h4><div class="tags" id="skillsManagement"></div></div>
+        <div class="skill-group"><h4>Top Skills</h4><div class="tags" id="skillsTools"></div></div>
+        <div class="skill-group"><h4>Certifications</h4><div class="tags" id="skillsCertifications"></div></div>
+        <div class="skill-group"><h4>Languages</h4><div class="tags" id="skillsLanguages"></div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- EXPERIENCE -->
+<div class="tabpanel" data-panel="experience">
+  <section class="page">
+    <div class="wrap">
+      <span class="eyebrow">Career</span>
+      <h2 class="section-title">Experience & Direction</h2>
+      <p class="section-sub">A timeline of my professional path — from hands-on EPC execution toward project and business leadership.</p>
+      <div class="timeline" id="experienceTimeline"></div>
+    </div>
+  </section>
+</div>
+
+<!-- COMPANIES -->
+<div class="tabpanel" data-panel="companies">
+  <section class="page">
+    <div class="wrap">
+      <span class="eyebrow">Trust</span>
+      <h2 class="section-title">Companies & Clients</h2>
+      <p class="section-sub">Where I've worked, and who I've worked for.</p>
+      <div class="company-grid" id="companiesGrid"></div>
+    </div>
+  </section>
+</div>
+
+<!-- PROJECTS -->
+<div class="tabpanel" data-panel="projects">
+  <section class="page">
+    <div class="wrap">
+      <span class="eyebrow">Portfolio</span>
+      <h2 class="section-title">Selected Work</h2>
+      <p class="section-sub">From large-scale EPC execution to process and business improvement initiatives.</p>
+      <div class="filter-row" id="projectFilters"></div>
+      <div class="card-grid" id="projectGrid"></div>
+    </div>
+  </section>
+</div>
+
+<!-- ARTICLES -->
+<div class="tabpanel" data-panel="articles">
+  <section class="page">
+    <div class="wrap">
+      <span class="eyebrow">Knowledge Sharing</span>
+      <h2 class="section-title">Writing & Notes</h2>
+      <p class="section-sub">Lessons and observations from the field, and from the shift toward project management.</p>
+      <div class="article-list" id="articleList"></div>
+    </div>
+  </section>
+</div>
+
+<!-- CONTACT + TESTIMONIALS -->
+<div class="tabpanel" data-panel="contact">
+  <section class="page" style="padding-bottom:0;">
+    <div class="wrap">
+      <span class="eyebrow">Testimonials</span>
+      <h2 class="section-title">What Colleagues & Clients Say</h2>
+      <div class="testi-grid" id="testiGrid"></div>
+    </div>
+  </section>
+  <section class="page">
+    <div class="wrap">
+      <div class="contact-card">
+        <div>
+          <h2>Let's talk.</h2>
+          <p id="contactText"></p>
+        </div>
+        <div class="contact-links" id="contactLinks"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div id="footerName"></div>
+    <div>Built as a personal site — <a href="/admin.html">admin</a></div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

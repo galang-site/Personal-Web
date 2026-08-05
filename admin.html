@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Site Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body class="admin-body">
+
+<!-- LOGIN VIEW -->
+<div id="loginView" class="login-shell">
+  <div class="login-card">
+    <span class="mark" style="display:inline-block;"></span>
+    <h1>Site Admin</h1>
+    <p class="sub">Sign in to edit your site's content.</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn primary btn-block">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- DASHBOARD VIEW -->
+<div id="dashboardView" class="admin-shell" style="display:none;">
+  <div class="admin-sidebar">
+    <div class="brand"><span class="mark"></span>Site Editor</div>
+    <button class="admin-nav-btn active" data-section="profile">Profile</button>
+    <button class="admin-nav-btn" data-section="about">About & Skills</button>
+    <button class="admin-nav-btn" data-section="stats">Stats</button>
+    <button class="admin-nav-btn" data-section="experience">Experience</button>
+    <button class="admin-nav-btn" data-section="companies">Companies</button>
+    <button class="admin-nav-btn" data-section="projects">Projects</button>
+    <button class="admin-nav-btn" data-section="articles">Writing</button>
+    <button class="admin-nav-btn" data-section="testimonials">Testimonials</button>
+    <div class="spacer"></div>
+    <a class="admin-nav-btn view-site" href="/index.html" target="_blank">↗ View live site</a>
+    <button class="admin-nav-btn signout" id="signOutBtn">Sign out</button>
+  </div>
+  <div class="admin-main" id="adminMain">
+    <!-- section content injected by admin.js -->
+  </div>
+</div>
+
+<div class="save-toast" id="saveToast">Saved</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/admin.js"></script>
+</body>
+</html>
