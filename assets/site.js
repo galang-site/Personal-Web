@@ -15,6 +15,16 @@ const ICON_PIN = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
 const ICON_MAIL = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>`;
 const ICON_BRIEFCASE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`;
 const ICON_EXTERNAL = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>`;
+// Icons for the mobile nav menu items (hidden on desktop — the pill tabs
+// there stay text-only and don't need them).
+const NAV_ICONS = {
+  home: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg>`,
+  about: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6.5 8-6.5s6.5 2 8 6.5"/></svg>`,
+  experience: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+  companies: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg>`,
+  projects: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`,
+  articles: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+};
 // Renders a category-label placeholder, or a real photo if image_url is set.
 const mediaHtml = (baseClass, imageUrl, label, alt) =>
   imageUrl
@@ -85,13 +95,17 @@ function render({ profile, about, stats, experience, companies, projects, articl
     { id: "projects", label: "Portfolio" },
     { id: "articles", label: "Writing" },
   ];
-  $("tabs").innerHTML = tabs.map((t,i) => `<button class="tab-btn ${i===0?'active':''}" data-tab="${t.id}">${t.label}</button>`).join("");
+  $("tabs").innerHTML = tabs.map((t,i) => `<button class="tab-btn ${i===0?'active':''}" data-tab="${t.id}"><span class="tab-icon">${NAV_ICONS[t.id] || ""}</span><span class="tab-label">${t.label}</span></button>`).join("");
+  function closeMobileMenu(){
+    $("tabs").classList.remove("open");
+    $("navOverlay").classList.remove("open");
+  }
   function goTo(id){
     closeDetailPage();
     closeModal();
     document.querySelectorAll(".tabpanel").forEach(p => p.classList.toggle("active", p.dataset.panel === id));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
-    document.getElementById("tabs").classList.remove("open");
+    closeMobileMenu();
     window.scrollTo(0,0);
   }
   document.addEventListener("click", (e) => {
@@ -110,7 +124,11 @@ function render({ profile, about, stats, experience, companies, projects, articl
       if (p) openProjectModal(p);
     }
   });
-  $("navToggle").addEventListener("click", () => $("tabs").classList.toggle("open"));
+  $("navToggle").addEventListener("click", () => {
+    $("tabs").classList.toggle("open");
+    $("navOverlay").classList.toggle("open");
+  });
+  $("navOverlay").addEventListener("click", closeMobileMenu);
 
   // QUICK-PREVIEW MODAL — short excerpt/description, with a "Read more" button
   // that opens the full read page (see below) for the same item.
