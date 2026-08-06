@@ -51,7 +51,6 @@ function render({ profile, about, stats, experience, companies, projects, articl
     { id: "companies", label: "Companies" },
     { id: "projects", label: "Portfolio" },
     { id: "articles", label: "Writing" },
-    { id: "contact", label: "Contact" },
   ];
   $("tabs").innerHTML = tabs.map((t,i) => `<button class="tab-btn ${i===0?'active':''}" data-tab="${t.id}">${t.label}</button>`).join("");
   function goTo(id){
