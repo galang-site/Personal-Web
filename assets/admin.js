@@ -15,6 +15,15 @@ const csvToArray = (text) => (text || "").split(",").map(s => s.trim()).filter(B
 const arrayToCsv = (arr) => (Array.isArray(arr) ? arr : []).join(", ");
 const esc = (s) => String(s ?? "").replace(/"/g, "&quot;");
 
+async function uploadImage(file, folder) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error: upErr } = await sb.storage.from("site-images").upload(path, file, { upsert: false, cacheControl: "3600" });
+  if (upErr) throw upErr;
+  const { data } = sb.storage.from("site-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
 function toast(msg) {
   const t = $("saveToast");
   t.textContent = msg;
@@ -121,6 +130,7 @@ const SECTIONS = {
       { key: "description", label: "Description", type: "textarea" },
       { key: "tags", label: "Tags (comma-separated)", type: "csv" },
       { key: "link", label: "Link (optional)", type: "text", placeholder: "https://..." },
+      { key: "image_url", label: "Project image", type: "image", folder: "projects" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
     rowTitle: r => r.title, rowSubtitle: r => r.category,
@@ -133,6 +143,7 @@ const SECTIONS = {
       { key: "excerpt", label: "Excerpt", type: "textarea" },
       { key: "article_date", label: "Date label", type: "text", placeholder: "e.g. Aug 2026" },
       { key: "link", label: "Link (optional)", type: "text", placeholder: "https://..." },
+      { key: "image_url", label: "Cover image", type: "image", folder: "articles" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
     rowTitle: r => r.title, rowSubtitle: r => `${r.category || ""} · ${r.article_date || ""}`,
@@ -163,23 +174,77 @@ async function renderProfileSection() {
     <div class="field"><label>Role / headline</label><input id="f_role" value="${esc(p.role)}"></div>
     <div class="field"><label>Badge text (small pill above your name)</label><input id="f_badge_text" value="${esc(p.badge_text)}"></div>
     <div class="field"><label>Tagline</label><textarea id="f_tagline">${esc(p.tagline)}</textarea></div>
-    <div class="two-col">
-      <div class="field"><label>Location</label><input id="f_location" value="${esc(p.location)}"></div>
-      <div class="field"><label>Résumé / CV link</label><input id="f_resume_url" value="${esc(p.resume_url)}"></div>
+    <div class="field"><label>Location</label><input id="f_location" value="${esc(p.location)}"></div>
+    <div class="field">
+      <label>Résumé / CV</label>
+      <input id="f_resume_url" value="${esc(p.resume_url)}" placeholder="https://... (paste a link, or upload a PDF below)">
+      <div class="hint" id="f_resume_status">${p.resume_url ? `Current: <a href="${esc(p.resume_url)}" target="_blank" rel="noopener">view file</a>` : "This is what the \"Résumé\" button in the top menu opens."}</div>
+      <div style="margin-top:8px;"><input type="file" id="f_resume_file" accept="application/pdf"></div>
+      <div class="hint">Uploading a PDF here will fill the link above automatically.</div>
     </div>
     <div class="two-col">
       <div class="field"><label>Email</label><input id="f_email" value="${esc(p.email)}"></div>
       <div class="field"><label>Phone</label><input id="f_phone" value="${esc(p.phone)}"></div>
     </div>
     <div class="field"><label>LinkedIn URL</label><input id="f_linkedin" value="${esc(p.linkedin)}"></div>
-    <div class="field"><label>Photo URL (optional)</label><input id="f_photo" value="${esc(p.photo)}"><div class="hint">Small avatar image, if you use one.</div></div>
-    <div class="field"><label>Hero background image URL (optional)</label><input id="f_hero_image" value="${esc(p.hero_image)}"><div class="hint">Shown behind/beside your name on the homepage.</div></div>
+    <div class="field">
+      <label>Profile photo</label>
+      <input type="hidden" id="f_photo" value="${esc(p.photo)}">
+      <div class="image-field">
+        <div class="image-preview" id="f_photo_preview">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : `<span>No image</span>`}</div>
+        <div style="flex:1;min-width:0;">
+          <input type="file" id="f_photo_file" accept="image/*">
+          <div class="hint" id="f_photo_status">${p.photo ? "Choose a new file to replace the current photo." : "This is shown on the homepage hero if no hero background image is set."}</div>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Hero background image</label>
+      <input type="hidden" id="f_hero_image" value="${esc(p.hero_image)}">
+      <div class="image-field">
+        <div class="image-preview" id="f_hero_image_preview">${p.hero_image ? `<img src="${esc(p.hero_image)}" alt="">` : `<span>No image</span>`}</div>
+        <div style="flex:1;min-width:0;">
+          <input type="file" id="f_hero_image_file" accept="image/*">
+          <div class="hint" id="f_hero_image_status">${p.hero_image ? "Choose a new file to replace the current image." : "Shown behind/beside your name on the homepage."}</div>
+        </div>
+      </div>
+    </div>
     <hr style="border:none;border-top:1px solid var(--line);margin:20px 0;">
     <div class="field"><label>Contact section text</label><textarea id="f_contact_text">${esc(p.contact_text)}</textarea></div>
     <div class="field"><label>Newsletter title</label><input id="f_newsletter_title" value="${esc(p.newsletter_title)}"></div>
     <div class="field"><label>Newsletter text</label><textarea id="f_newsletter_text">${esc(p.newsletter_text)}</textarea></div>
     <div class="form-actions"><button class="btn primary" id="saveProfileBtn">Save Profile</button></div>
   `;
+  [{ key: "photo", folder: "profile" }, { key: "hero_image", folder: "profile" }].forEach(({ key, folder }) => {
+    const fileInput = $(`f_${key}_file`);
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = $(`f_${key}_status`);
+      statusEl.textContent = "Uploading…";
+      try {
+        const url = await uploadImage(file, folder);
+        $(`f_${key}`).value = url;
+        $(`f_${key}_preview`).innerHTML = `<img src="${url}" alt="">`;
+        statusEl.textContent = "Uploaded ✓";
+      } catch (err) {
+        statusEl.textContent = "Upload failed: " + err.message;
+      }
+    });
+  });
+  $("f_resume_file").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const statusEl = $("f_resume_status");
+    statusEl.textContent = "Uploading…";
+    try {
+      const url = await uploadImage(file, "resume");
+      $("f_resume_url").value = url;
+      statusEl.innerHTML = `Uploaded ✓ — <a href="${url}" target="_blank" rel="noopener">view file</a>`;
+    } catch (err) {
+      statusEl.textContent = "Upload failed: " + err.message;
+    }
+  });
   $("saveProfileBtn").addEventListener("click", async () => {
     const payload = {
       name: $("f_name").value, initials: $("f_initials").value, role: $("f_role").value,
@@ -277,6 +342,18 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
     if (f.type === "csv") return `<div class="field"><label>${esc(f.label)}</label><input id="${id}" value="${esc(arrayToCsv(value))}"><div class="hint">Separate with commas.</div></div>`;
     if (f.type === "checkbox") return `<div class="field"><label><input type="checkbox" id="${id}" ${value ? "checked" : ""} style="width:auto;display:inline-block;margin-right:8px;"> ${esc(f.label)}</label></div>`;
     if (f.type === "number") return `<div class="field"><label>${esc(f.label)}</label><input type="number" id="${id}" value="${esc(value ?? 0)}"></div>`;
+    if (f.type === "image") return `
+      <div class="field">
+        <label>${esc(f.label)}</label>
+        <input type="hidden" id="${id}" value="${esc(value ?? "")}">
+        <div class="image-field">
+          <div class="image-preview" id="${id}_preview">${value ? `<img src="${esc(value)}" alt="">` : `<span>No image</span>`}</div>
+          <div style="flex:1;min-width:0;">
+            <input type="file" id="${id}_file" accept="image/*">
+            <div class="hint" id="${id}_status">${value ? "Choose a new file to replace the current image." : "Choose an image to upload (JPG/PNG, a few MB max)."}</div>
+          </div>
+        </div>
+      </div>`;
     return `<div class="field"><label>${esc(f.label)}</label><input id="${id}" value="${esc(value ?? "")}" placeholder="${esc(f.placeholder || "")}"></div>`;
   }
 
@@ -303,6 +380,26 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
         </div>
       </div>
     `;
+    fields.filter(f => f.type === "image").forEach(f => {
+      const id = `ff_${f.key}`;
+      const fileInput = document.getElementById(`${id}_file`);
+      if (!fileInput) return;
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const statusEl = document.getElementById(`${id}_status`);
+        statusEl.textContent = "Uploading…";
+        try {
+          const url = await uploadImage(file, f.folder || "misc");
+          document.getElementById(id).value = url;
+          document.getElementById(`${id}_preview`).innerHTML = `<img src="${url}" alt="">`;
+          statusEl.textContent = "Uploaded ✓";
+        } catch (err) {
+          statusEl.textContent = "Upload failed: " + err.message;
+        }
+      });
+    });
+
     $("cancelFormBtn").addEventListener("click", () => { $("formArea").innerHTML = ""; });
     $("submitFormBtn").addEventListener("click", async () => {
       const payload = {};

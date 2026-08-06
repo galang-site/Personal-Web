@@ -6,6 +6,11 @@ const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANO
 
 const $ = (id) => document.getElementById(id);
 const initials = (name) => (name || "").split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+// Renders a category-label placeholder, or a real photo if image_url is set.
+const mediaHtml = (baseClass, imageUrl, label, alt) =>
+  imageUrl
+    ? `<div class="${baseClass} has-image"><img src="${imageUrl}" alt="${alt || ""}" loading="lazy"></div>`
+    : `<div class="${baseClass}">${label || ""}</div>`;
 
 async function loadAll() {
   const [profileRes, aboutRes, statsRes, expRes, compRes, projRes, artRes, testiRes] = await Promise.all([
@@ -80,7 +85,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
   // FEED — recent writing (home)
   $("homeFeed").innerHTML = articles.slice(0,3).map((a,i) => `
     <a class="feed-card ${i===0?'featured':''}" href="${a.link || '#'}" target="_blank" rel="noopener">
-      <div class="feed-media">${a.category || ""}</div>
+      ${mediaHtml("feed-media", a.image_url, a.category, a.title)}
       <div class="feed-body">
         <h3>${a.title}</h3>
         <p>${a.excerpt || ""}</p>
@@ -95,7 +100,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
     if(!p) { $("homeSpotlight").innerHTML = `<div class="empty-state">No project added yet.</div>`; return; }
     const tags = Array.isArray(p.tags) ? p.tags : [];
     $("homeSpotlight").innerHTML = `
-      <div class="spotlight-media">${p.category || ""}</div>
+      ${mediaHtml("spotlight-media", p.image_url, p.category, p.title)}
       <div class="spotlight-body">
         <span class="eyebrow">Featured Project</span>
         <h3>${p.title}</h3>
@@ -161,7 +166,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
       const tags = Array.isArray(p.tags) ? p.tags : [];
       return `
       <a class="card" href="${p.link || '#'}" target="_blank" rel="noopener">
-        <div class="card-media">${p.category || ""}</div>
+        ${mediaHtml("card-media", p.image_url, p.category, p.title)}
         <div class="card-body">
           <h3>${p.title}</h3>
           <p>${p.description || ""}</p>
@@ -183,7 +188,8 @@ function render({ profile, about, stats, experience, companies, projects, articl
   // ARTICLES
   $("articleList").innerHTML = articles.map(a => `
     <a class="article-item" href="${a.link || '#'}" target="_blank" rel="noopener">
-      <div><span class="article-cat">${a.category || ""}</span>
+      ${a.image_url ? `<img class="article-thumb" src="${a.image_url}" alt="${a.title}" loading="lazy">` : ""}
+      <div style="flex:1;min-width:0;"><span class="article-cat">${a.category || ""}</span>
         <div class="article-title">${a.title}</div>
         <div class="article-excerpt">${a.excerpt || ""}</div>
       </div>

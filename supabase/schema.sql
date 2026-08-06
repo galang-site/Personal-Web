@@ -1,6 +1,11 @@
 -- =====================================================================
 -- Personal Brand Website — Supabase schema
 -- Run this in Supabase Dashboard > SQL Editor > New query > Run
+--
+-- SAFE TO RE-RUN: every statement below is idempotent — you can paste
+-- and run this whole file again anytime (e.g. after Claude adds a new
+-- column or feature) without errors and without duplicating your data
+-- or wiping edits you've already made through /admin.
 -- =====================================================================
 
 -- ---------- PROFILE (singleton row) ----------
@@ -72,6 +77,7 @@ create table if not exists projects (
   description text default '',
   tags jsonb default '[]',
   link text default '#',
+  image_url text default '',
   sort_order int default 0
 );
 
@@ -83,6 +89,7 @@ create table if not exists articles (
   excerpt text default '',
   article_date text default '',
   link text default '#',
+  image_url text default '',
   sort_order int default 0
 );
 
@@ -94,6 +101,10 @@ create table if not exists testimonials (
   role text default '',
   sort_order int default 0
 );
+
+-- ---------- Backfill columns for projects/tables created before this update ----------
+alter table projects add column if not exists image_url text default '';
+alter table articles add column if not exists image_url text default '';
 
 -- =====================================================================
 -- ROW LEVEL SECURITY
@@ -115,6 +126,10 @@ declare t text;
 begin
   for t in select unnest(array['profile','about','stats','experience','companies','projects','articles','testimonials'])
   loop
+    execute format('drop policy if exists "public_read_%1$s" on %1$s;', t);
+    execute format('drop policy if exists "auth_write_%1$s" on %1$s;', t);
+    execute format('drop policy if exists "auth_update_%1$s" on %1$s;', t);
+    execute format('drop policy if exists "auth_delete_%1$s" on %1$s;', t);
     execute format('create policy "public_read_%1$s" on %1$s for select using (true);', t);
     execute format('create policy "auth_write_%1$s" on %1$s for insert with check (auth.role() = ''authenticated'');', t);
     execute format('create policy "auth_update_%1$s" on %1$s for update using (auth.role() = ''authenticated'');', t);
@@ -123,7 +138,33 @@ begin
 end $$;
 
 -- =====================================================================
--- SEED DATA — Galang's real profile from LinkedIn
+-- STORAGE — a public bucket for project/article images, uploaded from
+-- the /admin panel. Public can view images; only logged-in users can
+-- upload/replace/delete them.
+-- =====================================================================
+insert into storage.buckets (id, name, public)
+values ('site-images', 'site-images', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "public_read_site_images" on storage.objects;
+drop policy if exists "auth_upload_site_images" on storage.objects;
+drop policy if exists "auth_update_site_images" on storage.objects;
+drop policy if exists "auth_delete_site_images" on storage.objects;
+
+create policy "public_read_site_images" on storage.objects
+  for select using (bucket_id = 'site-images');
+create policy "auth_upload_site_images" on storage.objects
+  for insert with check (bucket_id = 'site-images' and auth.role() = 'authenticated');
+create policy "auth_update_site_images" on storage.objects
+  for update using (bucket_id = 'site-images' and auth.role() = 'authenticated');
+create policy "auth_delete_site_images" on storage.objects
+  for delete using (bucket_id = 'site-images' and auth.role() = 'authenticated');
+
+-- =====================================================================
+-- SEED DATA — Galang's real profile from LinkedIn.
+-- Profile/About use upsert (safe to re-run, always reflects this file).
+-- The list tables only seed if empty, so re-running this script never
+-- duplicates rows or overwrites edits you've made via /admin.
 -- =====================================================================
 insert into profile (id, name, initials, role, badge_text, tagline, location, email, phone, linkedin, resume_url, contact_text, newsletter_title, newsletter_text)
 values (
@@ -141,11 +182,7 @@ values (
   'Open to new opportunities, project collaboration, or a conversation about EPCC cost estimation and project management.',
   'A short note, now and then',
   'Occasional thoughts on EPC work, project leadership, and the move into management.'
-) on conflict (id) do update set
-  name = excluded.name, role = excluded.role, badge_text = excluded.badge_text,
-  tagline = excluded.tagline, location = excluded.location, email = excluded.email,
-  phone = excluded.phone, linkedin = excluded.linkedin, contact_text = excluded.contact_text,
-  newsletter_title = excluded.newsletter_title, newsletter_text = excluded.newsletter_text;
+) on conflict (id) do nothing;
 
 insert into about (id, paragraphs, skills_technical, skills_management, skills_tools, certifications, languages)
 values (
@@ -156,56 +193,84 @@ values (
   '["Construction Project Management", "Financial Analysis", "Web Development"]',
   '["Project Management Foundations", "Microsoft Teams Enablement Training", "Strategic Project Risk Management", "Building Business Relationships", "CFI Corporate Finance Foundations Professional Certificate"]',
   '["Bahasa Indonesia", "English", "Javanese"]'
-) on conflict (id) do update set
-  paragraphs = excluded.paragraphs, skills_technical = excluded.skills_technical,
-  skills_management = excluded.skills_management, skills_tools = excluded.skills_tools,
-  certifications = excluded.certifications, languages = excluded.languages;
+) on conflict (id) do nothing;
 
-insert into stats (num, label, sort_order) values
-  ('8+', 'Years Experience', 1),
-  ('5', 'Certifications', 2),
-  ('3', 'Languages Spoken', 3),
-  ('EPCC', 'Energy & Oil and Gas Focus', 4);
+do $$ begin
+  if not exists (select 1 from stats) then
+    insert into stats (num, label, sort_order) values
+      ('8+', 'Years Experience', 1),
+      ('5', 'Certifications', 2),
+      ('3', 'Languages Spoken', 3),
+      ('EPCC', 'Energy & Oil and Gas Focus', 4);
+  end if;
+end $$;
 
-insert into experience (role, company, period, description, bullets, is_future, sort_order) values
-  ('Project Manager (Target)', 'Next Career Step', 'Ahead',
-   'Focused on growing into a management role that combines EPCC technical depth with strategic business leadership.',
-   '["Pursuing a PMP / project management certification", "Building business acumen and leadership capability"]', true, 1),
-  ('Cost Estimating Coordinator', 'PT Wijaya Karya (Persero) Tbk', 'Apr 2023 — Present',
-   'Leading a team of estimators in preparing tender cost estimations and RAB for EPC, Energy, and Oil & Gas projects in Jakarta.',
-   '["Lead and guide a team of estimators in preparing tender cost estimations and RAB", "Perform cost breakdown, scope evaluation, and material take-offs for tender submissions", "Coordinate with vendors to obtain quotations and negotiate competitive pricing and terms", "Liaise with EPC and Oil & Gas clients to clarify tender requirements and commercial conditions", "Ensure accuracy and competitiveness of submitted tenders to support strategic bidding decisions"]',
-   false, 2),
-  ('Cost Estimator', 'PT Wijaya Karya (Persero) Tbk', 'May 2020 — Apr 2023',
-   'Prepared detailed cost estimates and managed budgets across the full construction project lifecycle in Jakarta.',
-   '["Prepared detailed cost estimates and managed project budgets, including materials, labor, and equipment", "Reviewed scope of work, bills of quantities, and specifications; evaluated and compared contractor/supplier bids", "Defined Work Breakdown Structures and evaluated preliminary master schedules and productivity", "Reviewed contracts and managed contractual obligations, variations, claims, and disputes", "Identified value engineering opportunities and risk mitigation strategies to control cost and schedule"]',
-   false, 3),
-  ('Quality Assurance and Quality Control Engineer', 'PT Wijaya Karya (Persero) Tbk', 'Jul 2018 — May 2020',
-   'Developed inspection standards and ensured construction quality on a power plant project in East Kalimantan.',
-   '["Developed inspection, testing, and evaluation standards per local/international requirements", "Resolved product quality issues across suppliers, production, and client teams", "Raised Requests for Inspection and maintained inspection and quality management documentation", "Managed nonconformance reporting, punch listing, and close-out", "Prepared final hand-over documentation for power plant buildings and utilities"]',
-   false, 4),
-  ('Management Trainee', 'PT Wijaya Karya (Persero) Tbk', 'Jan 2018 — Jul 2018',
-   'Recognized as one of the best employees in the WIKA 77 & 78 Management Trainee batch, Greater Jakarta Area.',
-   '["Published research: \"The Use of Cement Type I & Silica Fume as an Alternate of Cement Type V on Coal Fired Steam Power Plant Construction\""]',
-   false, 5),
-  ('Student Internship', 'PT Nusa Konstruksi Enjiniring Tbk', 'Jul 2016 — Sep 2016',
-   'Supported civil engineering teams in Rawa Buaya, West Jakarta with shop drawings, bar bending schedules, and method statements.',
-   '[]', false, 6);
+do $$ begin
+  if not exists (select 1 from experience) then
+    insert into experience (role, company, period, description, bullets, is_future, sort_order) values
+      ('Project Manager (Target)', 'Next Career Step', 'Ahead',
+       'Focused on growing into a management role that combines EPCC technical depth with strategic business leadership.',
+       '["Pursuing a PMP / project management certification", "Building business acumen and leadership capability"]', true, 1),
+      ('Cost Estimating Coordinator', 'PT Wijaya Karya (Persero) Tbk', 'Apr 2023 — Present',
+       'Leading a team of estimators in preparing tender cost estimations and RAB for EPC, Energy, and Oil & Gas projects in Jakarta.',
+       '["Lead and guide a team of estimators in preparing tender cost estimations and RAB", "Perform cost breakdown, scope evaluation, and material take-offs for tender submissions", "Coordinate with vendors to obtain quotations and negotiate competitive pricing and terms", "Liaise with EPC and Oil & Gas clients to clarify tender requirements and commercial conditions", "Ensure accuracy and competitiveness of submitted tenders to support strategic bidding decisions"]',
+       false, 2),
+      ('Cost Estimator', 'PT Wijaya Karya (Persero) Tbk', 'May 2020 — Apr 2023',
+       'Prepared detailed cost estimates and managed budgets across the full construction project lifecycle in Jakarta.',
+       '["Prepared detailed cost estimates and managed project budgets, including materials, labor, and equipment", "Reviewed scope of work, bills of quantities, and specifications; evaluated and compared contractor/supplier bids", "Defined Work Breakdown Structures and evaluated preliminary master schedules and productivity", "Reviewed contracts and managed contractual obligations, variations, claims, and disputes", "Identified value engineering opportunities and risk mitigation strategies to control cost and schedule"]',
+       false, 3),
+      ('Quality Assurance and Quality Control Engineer', 'PT Wijaya Karya (Persero) Tbk', 'Jul 2018 — May 2020',
+       'Developed inspection standards and ensured construction quality on a power plant project in East Kalimantan.',
+       '["Developed inspection, testing, and evaluation standards per local/international requirements", "Resolved product quality issues across suppliers, production, and client teams", "Raised Requests for Inspection and maintained inspection and quality management documentation", "Managed nonconformance reporting, punch listing, and close-out", "Prepared final hand-over documentation for power plant buildings and utilities"]',
+       false, 4),
+      ('Management Trainee', 'PT Wijaya Karya (Persero) Tbk', 'Jan 2018 — Jul 2018',
+       'Recognized as one of the best employees in the WIKA 77 & 78 Management Trainee batch, Greater Jakarta Area.',
+       '["Published research: \"The Use of Cement Type I & Silica Fume as an Alternate of Cement Type V on Coal Fired Steam Power Plant Construction\""]',
+       false, 5),
+      ('Student Internship', 'PT Nusa Konstruksi Enjiniring Tbk', 'Jul 2016 — Sep 2016',
+       'Supported civil engineering teams in Rawa Buaya, West Jakarta with shop drawings, bar bending schedules, and method statements.',
+       '[]', false, 6);
+  end if;
+end $$;
 
-insert into companies (name, role, sort_order) values
-  ('PT Wijaya Karya (Persero) Tbk', 'Employer — Cost Estimating Coordinator', 1),
-  ('PT Nusa Konstruksi Enjiniring Tbk', 'Employer — Civil Engineering Internship', 2),
-  ('Universitas Sebelas Maret', 'Alma Mater — B.Eng. Civil Engineering', 3);
+do $$ begin
+  if not exists (select 1 from companies) then
+    insert into companies (name, role, sort_order) values
+      ('PT Wijaya Karya (Persero) Tbk', 'Employer — Cost Estimating Coordinator', 1),
+      ('PT Nusa Konstruksi Enjiniring Tbk', 'Employer — Civil Engineering Internship', 2),
+      ('Universitas Sebelas Maret', 'Alma Mater — B.Eng. Civil Engineering', 3);
+  end if;
+end $$;
 
-insert into projects (title, category, description, tags, link, sort_order) values
-  ('EPC Tender Cost Estimation — Oil & Gas Facility', 'EPC', 'Led cost breakdown, scope evaluation, and vendor coordination to prepare a competitive EPC tender submission in the oil & gas sector.', '["EPC", "Cost Estimation", "Oil & Gas"]', '#', 1),
-  ('RAB & Estimation Workflow Improvement', 'Business', 'Streamlined the tender cost estimation and RAB process to improve turnaround time and accuracy across the estimating team.', '["Process Improvement", "Cost Management"]', '#', 2),
-  ('Power Plant Quality Assurance Program', 'Management', 'Set up inspection standards and quality documentation processes for a coal-fired steam power plant construction project.', '["QA/QC", "Project Control"]', '#', 3);
+do $$ begin
+  if not exists (select 1 from projects) then
+    insert into projects (title, category, description, tags, link, sort_order) values
+      ('EPC Tender Cost Estimation — Oil & Gas Facility', 'EPC', 'Led cost breakdown, scope evaluation, and vendor coordination to prepare a competitive EPC tender submission in the oil & gas sector.', '["EPC", "Cost Estimation", "Oil & Gas"]', '#', 1),
+      ('RAB & Estimation Workflow Improvement', 'Business', 'Streamlined the tender cost estimation and RAB process to improve turnaround time and accuracy across the estimating team.', '["Process Improvement", "Cost Management"]', '#', 2),
+      ('Power Plant Quality Assurance Program', 'Management', 'Set up inspection standards and quality documentation processes for a coal-fired steam power plant construction project.', '["QA/QC", "Project Control"]', '#', 3);
+  end if;
+end $$;
 
-insert into articles (title, category, excerpt, article_date, link, sort_order) values
-  ('Five Lessons From My First EPC Project', 'EPC Insights', 'The things you don''t learn in a classroom but that matter the moment you''re on site.', 'Jul 2026', '#', 1),
-  ('From Engineer to Project Manager: What Actually Changes', 'Career', 'Reflections on the shift in mindset that comes with taking on managerial responsibility.', 'Jun 2026', '#', 2),
-  ('How to Build an Accurate RAB for an EPCC Project', 'Knowledge Sharing', 'A practical guide to preparing a cost estimate from a client''s BOQ.', 'May 2026', '#', 3);
+do $$ begin
+  if not exists (select 1 from articles) then
+    insert into articles (title, category, excerpt, article_date, link, sort_order) values
+      ('Five Lessons From My First EPC Project', 'EPC Insights', 'The things you don''t learn in a classroom but that matter the moment you''re on site.', 'Jul 2026', '#', 1),
+      ('From Engineer to Project Manager: What Actually Changes', 'Career', 'Reflections on the shift in mindset that comes with taking on managerial responsibility.', 'Jun 2026', '#', 2),
+      ('How to Build an Accurate RAB for an EPCC Project', 'Knowledge Sharing', 'A practical guide to preparing a cost estimate from a client''s BOQ.', 'May 2026', '#', 3);
+  end if;
+end $$;
 
-insert into testimonials (quote, name, role, sort_order) values
-  ('A genuinely professional working relationship — detail-oriented and always on time with every project deliverable.', 'Colleague Name', 'Project Director, Company X', 1),
-  ('Strong technical ability paired with clear communication to every stakeholder involved.', 'Client Name', 'Site Manager, Client Y', 2);
+do $$ begin
+  if not exists (select 1 from testimonials) then
+    insert into testimonials (quote, name, role, sort_order) values
+      ('A genuinely professional working relationship — detail-oriented and always on time with every project deliverable.', 'Colleague Name', 'Project Director, Company X', 1),
+      ('Strong technical ability paired with clear communication to every stakeholder involved.', 'Client Name', 'Site Manager, Client Y', 2);
+  end if;
+end $$;
+
+-- =====================================================================
+-- Force PostgREST to pick up the schema immediately (avoids the
+-- "Could not find the table in the schema cache" error right after
+-- creating new tables/columns).
+-- =====================================================================
+notify pgrst, 'reload schema';
