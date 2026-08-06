@@ -211,9 +211,10 @@ function render({ profile, about, stats, experience, companies, projects, articl
     </div>
   `).join("") || `<div class="empty-state">No writing published yet.</div>`;
 
-  // SPOTLIGHT — one featured project (home)
+  // SPOTLIGHT — one featured project (home) — prefers the project marked
+  // "Featured" in /admin, falls back to the first project if none is marked.
   (function(){
-    const p = projects[0];
+    const p = projects.find(x => x.is_featured) || projects[0];
     if(!p) { $("homeSpotlight").innerHTML = `<div class="empty-state">No project added yet.</div>`; return; }
     const tags = Array.isArray(p.tags) ? p.tags : [];
     $("homeSpotlight").innerHTML = `

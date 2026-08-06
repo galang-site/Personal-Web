@@ -82,6 +82,7 @@ create table if not exists projects (
   link text default '#',
   image_url text default '',
   images jsonb default '[]',
+  is_featured boolean default false,
   sort_order int default 0
 );
 
@@ -117,6 +118,7 @@ alter table profile add column if not exists about_photo text default '';
 alter table companies add column if not exists logo_url text default '';
 alter table projects add column if not exists images jsonb default '[]';
 alter table articles add column if not exists images jsonb default '[]';
+alter table projects add column if not exists is_featured boolean default false;
 
 -- =====================================================================
 -- ROW LEVEL SECURITY

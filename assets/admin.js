@@ -134,9 +134,10 @@ const SECTIONS = {
       { key: "link", label: "External link (optional — shown as a button on the full read page)", type: "text", placeholder: "https://..." },
       { key: "image_url", label: "Project image", type: "image", folder: "projects" },
       { key: "images", label: "Extra photos (shown as a gallery on the full read page)", type: "gallery", folder: "projects" },
+      { key: "is_featured", label: "Show as the \"Featured Project\" on the homepage", type: "checkbox" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
-    rowTitle: r => r.title, rowSubtitle: r => r.category,
+    rowTitle: r => r.title, rowSubtitle: r => (r.is_featured ? "★ Featured · " : "") + (r.category || ""),
   }),
   articles: () => renderListSection({
     table: "articles", title: "Writing / Knowledge Sharing", subtitle: "Articles and notes shown on your Writing tab.",
@@ -323,8 +324,12 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
     const listArea = $("listArea");
     if (error) { listArea.innerHTML = `<div class="empty-state">${esc(error.message)}</div>`; return; }
     if (!data || !data.length) { listArea.innerHTML = `<div class="empty-state">Nothing here yet — click "Add new" to create the first one.</div>`; return; }
-    listArea.innerHTML = data.map(row => `
+    listArea.innerHTML = data.map((row, i) => `
       <div class="admin-row">
+        <div class="reorder-btns">
+          <button class="icon-btn reorder-btn" data-move-up="${row.id}" ${i === 0 ? "disabled" : ""} title="Move up">↑</button>
+          <button class="icon-btn reorder-btn" data-move-down="${row.id}" ${i === data.length - 1 ? "disabled" : ""} title="Move down">↓</button>
+        </div>
         <div class="info">
           <div class="title">${esc(rowTitle(row))}</div>
           <div class="sub">${esc(rowSubtitle(row) || "")}</div>
@@ -349,6 +354,32 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
         toast("Deleted");
         loadList();
       });
+    });
+    // Reordering: swap this row's sort_order with its neighbor's, so items can
+    // be nudged up/down without hand-editing the "Order" number field.
+    async function swapOrder(id, dir) {
+      const idx = data.findIndex(r => String(r.id) === id);
+      const otherIdx = idx + dir;
+      if (idx === -1 || otherIdx < 0 || otherIdx >= data.length) return;
+      const a = data[idx], b = data[otherIdx];
+      let aOrder = a.sort_order != null ? a.sort_order : idx;
+      let bOrder = b.sort_order != null ? b.sort_order : otherIdx;
+      // If both rows share the same sort_order (e.g. everything defaults to 0),
+      // swapping the value alone would be a no-op — fall back to swapping
+      // their list positions instead so the move always has a visible effect.
+      if (aOrder === bOrder) { aOrder = otherIdx; bOrder = idx; }
+      const [{ error: e1 }, { error: e2 }] = await Promise.all([
+        sb.from(table).update({ sort_order: bOrder }).eq("id", a.id),
+        sb.from(table).update({ sort_order: aOrder }).eq("id", b.id),
+      ]);
+      if (e1 || e2) { alert("Error reordering: " + ((e1 && e1.message) || (e2 && e2.message))); return; }
+      loadList();
+    }
+    listArea.querySelectorAll("[data-move-up]").forEach(btn => {
+      btn.addEventListener("click", () => swapOrder(btn.dataset.moveUp, -1));
+    });
+    listArea.querySelectorAll("[data-move-down]").forEach(btn => {
+      btn.addEventListener("click", () => swapOrder(btn.dataset.moveDown, 1));
     });
   }
 
@@ -474,13 +505,21 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
     $("submitFormBtn").addEventListener("click", async () => {
       const payload = {};
       fields.forEach(f => { payload[f.key] = readField(f); });
-      let error;
+      let error, newRow;
       if (isEdit) {
         ({ error } = await sb.from(table).update(payload).eq("id", row.id));
       } else {
-        ({ error } = await sb.from(table).insert(payload));
+        ({ error, data: newRow } = await sb.from(table).insert(payload).select().single());
       }
       if (error) { alert("Error saving: " + error.message); return; }
+      // Only one project can be the homepage "Featured Project" — unchecking it
+      // on every other row keeps that single-selection behavior consistent.
+      if (table === "projects" && payload.is_featured) {
+        const keepId = isEdit ? row.id : (newRow && newRow.id);
+        if (keepId != null) {
+          await sb.from("projects").update({ is_featured: false }).neq("id", keepId);
+        }
+      }
       toast(isEdit ? "Saved" : "Added");
       $("formArea").innerHTML = "";
       loadList();
