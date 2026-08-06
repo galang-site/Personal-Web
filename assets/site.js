@@ -120,8 +120,9 @@ function render({ profile, about, stats, experience, companies, projects, articl
   $("heroTagline").textContent = profile.tagline || "";
   $("heroMeta").innerHTML = `<span>📍 ${profile.location || ""}</span><span>✉️ ${profile.email || ""}</span><span>💼 ${profile.role || ""}</span>`;
   const heroImg = profile.hero_image || profile.photo;
+  $("heroPhoto").classList.toggle("is-placeholder", !heroImg);
   if (heroImg) { $("heroPhoto").innerHTML = `<img src="${heroImg}" alt="${profile.name || ""}">`; }
-  else { const initEl = $("heroPhoto").querySelector(".initials"); if (initEl) initEl.textContent = profile.initials || initials(profile.name); }
+  else { $("heroPhoto").innerHTML = `<span class="initials">${profile.initials || initials(profile.name)}</span>`; }
 
   // STATS
   $("statRow").innerHTML = stats.map(s => `
@@ -173,8 +174,9 @@ function render({ profile, about, stats, experience, companies, projects, articl
 
   // ABOUT
   const aboutImg = profile.about_photo || profile.photo || profile.hero_image;
+  $("aboutPhoto").classList.toggle("is-placeholder", !aboutImg);
   if (aboutImg) { $("aboutPhoto").innerHTML = `<img src="${aboutImg}" alt="${profile.name || ""}">`; }
-  else { const initEl = $("aboutPhoto").querySelector(".initials"); if (initEl) initEl.textContent = profile.initials || initials(profile.name); }
+  else { $("aboutPhoto").innerHTML = `<span class="initials">${profile.initials || initials(profile.name)}</span>`; }
   const paragraphs = Array.isArray(about.paragraphs) ? about.paragraphs : [];
   $("aboutText").innerHTML = paragraphs.map(p=>`<p>${p}</p>`).join("");
   const tagList = (arr) => (Array.isArray(arr) ? arr : []).map(s=>`<span class="tag">${s}</span>`).join("");

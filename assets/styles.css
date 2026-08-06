@@ -105,22 +105,24 @@
   .hero-meta{display:flex;gap:20px;flex-wrap:wrap;color:var(--ink-soft);font-size:13px;font-weight:500;}
   .hero-meta span{display:flex;align-items:center;gap:6px;}
   /* Plain photo frames — no colored block, just correctly proportioned crops.
-     Bring your own finished image (background already baked in); this only
-     controls the container's shape and how the image fills it. */
-  .hero-photo{
-    aspect-ratio:4/5;border-radius:20px;overflow:hidden;position:relative;
-    background:var(--bg-soft);border:1px solid var(--line);box-shadow:var(--shadow-md);
-    display:flex;align-items:center;justify-content:center;
-  }
-  .hero-photo img{width:100%;height:100%;object-fit:cover;}
+     Bring your own finished image exactly as-is — no crop, no border, no
+     shadow, no background box. The image is shown at its natural shape;
+     only a max-width caps how big it can render. The box/border only shows
+     up as a placeholder before you've uploaded a photo. */
+  .hero-photo{width:100%;max-width:420px;margin-left:auto;}
+  .hero-photo img{width:100%;height:auto;display:block;}
   .hero-photo .initials{font-family:var(--display);font-size:96px;font-weight:800;color:var(--accent);opacity:.85;}
-  .about-photo{
-    width:100%;max-width:360px;aspect-ratio:5/4;border-radius:16px;overflow:hidden;position:relative;
-    background:var(--bg-soft);border:1px solid var(--line);box-shadow:var(--shadow-sm);margin-bottom:26px;
+  .hero-photo.is-placeholder{
+    aspect-ratio:4/5;border-radius:20px;background:var(--bg-soft);border:1px solid var(--line);
     display:flex;align-items:center;justify-content:center;
   }
-  .about-photo img{width:100%;height:100%;object-fit:cover;}
+  .about-photo{width:100%;max-width:320px;margin-bottom:26px;}
+  .about-photo img{width:100%;height:auto;display:block;}
   .about-photo .initials{font-family:var(--display);font-size:44px;font-weight:800;color:var(--accent);opacity:.85;}
+  .about-photo.is-placeholder{
+    aspect-ratio:4/5;border-radius:16px;background:var(--bg-soft);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+  }
 
   .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
   @media (max-width:700px){.stat-row{grid-template-columns:repeat(2,1fr);}}
