@@ -98,7 +98,6 @@ function render({ profile, about, stats, experience, companies, projects, articl
   $("tabs").innerHTML = tabs.map((t,i) => `<button class="tab-btn ${i===0?'active':''}" data-tab="${t.id}"><span class="tab-icon">${NAV_ICONS[t.id] || ""}</span><span class="tab-label">${t.label}</span></button>`).join("");
   function closeMobileMenu(){
     $("tabs").classList.remove("open");
-    $("navOverlay").classList.remove("open");
   }
   function goTo(id){
     closeDetailPage();
@@ -124,11 +123,18 @@ function render({ profile, about, stats, experience, companies, projects, articl
       if (p) openProjectModal(p);
     }
   });
-  $("navToggle").addEventListener("click", () => {
+  $("navToggle").addEventListener("click", (e) => {
+    e.stopPropagation();
     $("tabs").classList.toggle("open");
-    $("navOverlay").classList.toggle("open");
   });
-  $("navOverlay").addEventListener("click", closeMobileMenu);
+  // Compact strip closes on any tap outside it (instead of a full-screen
+  // dark overlay — the strip itself is small now, so a heavy backdrop would
+  // look out of place).
+  document.addEventListener("click", (e) => {
+    if (!$("tabs").classList.contains("open")) return;
+    if (e.target.closest("#tabs") || e.target.closest("#navToggle")) return;
+    closeMobileMenu();
+  });
 
   // QUICK-PREVIEW MODAL — short excerpt/description, with a "Read more" button
   // that opens the full read page (see below) for the same item.

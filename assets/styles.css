@@ -71,32 +71,51 @@
   .nav-toggle{display:none;color:var(--ink);padding:8px 12px;align-items:center;justify-content:center;}
 
   .tab-icon{display:none;flex-shrink:0;}
-  .nav-overlay{
-    position:fixed;inset:0;background:rgba(15,20,32,.38);backdrop-filter:blur(2px);z-index:59;
-    opacity:0;pointer-events:none;transition:opacity .25s ease;
-  }
-  .nav-overlay.open{opacity:1;pointer-events:auto;}
 
+  /* Compact mobile nav: a single-row, horizontally-scrollable strip that
+     drops down from the hamburger — not a tall dropdown card that eats the
+     screen. Tap a tab (or tap outside) to close it. */
   @media (max-width:960px){
     .tabs{
-      position:fixed;top:88px;left:16px;right:16px;background:var(--surface);border-radius:24px;
-      flex-direction:column;align-items:stretch;padding:14px;gap:3px;
-      transform:translateY(-16px) scale(.96);opacity:0;pointer-events:none;
-      transition:transform .25s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
-      box-shadow:0 20px 50px rgba(15,20,32,.18), 0 4px 16px rgba(15,20,32,.08);
-      border:1px solid var(--line);z-index:61;
+      position:fixed;top:78px;left:16px;right:16px;background:var(--surface);border-radius:999px;
+      flex-direction:row;align-items:center;gap:6px;padding:6px;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+      transform:translateY(-14px) scale(.96);opacity:0;pointer-events:none;
+      transition:transform .2s cubic-bezier(.2,.8,.2,1), opacity .15s ease;
+      box-shadow:0 14px 34px rgba(15,20,32,.16);border:1px solid var(--line);z-index:61;
     }
+    .tabs::-webkit-scrollbar{display:none;}
     .tabs.open{transform:translateY(0) scale(1);opacity:1;pointer-events:auto;}
     .tab-btn{
-      display:flex;align-items:center;gap:13px;text-align:left;padding:13px 16px;border-radius:14px;
-      color:var(--ink-soft);font-size:15px;
+      display:flex;align-items:center;gap:7px;flex-shrink:0;white-space:nowrap;
+      padding:10px 15px;border-radius:999px;color:var(--ink-soft);font-size:13.5px;
     }
-    .tab-btn .tab-icon{display:inline-flex;color:var(--ink-faint);transition:.2s;}
-    .tab-btn:hover{background:var(--bg-soft);}
-    .tab-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;box-shadow:0 8px 20px rgba(37,99,235,.28);}
+    .tab-btn .tab-icon{display:inline-flex;color:var(--ink-faint);}
+    .tab-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;}
     .tab-btn.active .tab-icon{color:#fff;}
     .nav-toggle{display:flex;}
     .nav-cta .btn.ghost{display:none;}
+  }
+
+  /* Landscape phones get the roomier desktop-style pill nav instead of the
+     compact dropdown strip above — there's enough width for it, so no need
+     to hide the tabs behind a hamburger. This block is placed after the
+     mobile block above so it wins when both match (e.g. a phone in
+     landscape that's still under 960px wide). */
+  @media (min-width:700px) and (orientation:landscape) and (max-width:960px){
+    .tabs{
+      position:static;flex-direction:row;background:var(--bg-soft);border-radius:999px;
+      padding:4px;gap:2px;transform:none;opacity:1;pointer-events:auto;
+      box-shadow:none;border:none;
+      /* Safety net: if it's still too tight to fit everything on one row,
+         scroll within the pill instead of wrapping/breaking the layout. */
+      overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    }
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab-btn{padding:9px 14px;font-size:12.5px;flex-shrink:0;}
+    .tab-icon{display:none;}
+    .tab-btn.active{background:var(--ink);color:#fff;}
+    .nav-toggle{display:none;}
   }
 
   /* ===== PANELS ===== */
@@ -146,12 +165,25 @@
   .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
   @media (max-width:700px){.stat-row{grid-template-columns:repeat(2,1fr);}}
   .stat-card{
-    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:20px;
-    box-shadow:var(--shadow-sm);transition:.2s;
+    position:relative;overflow:hidden;
+    background:linear-gradient(160deg,var(--surface) 0%,var(--accent-soft) 150%);
+    border:1px solid var(--line);border-radius:var(--radius-sm);padding:22px 20px;
+    box-shadow:var(--shadow-sm);transition:.25s cubic-bezier(.2,.8,.2,1);
   }
-  .stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
-  .stat-num{font-family:var(--display);font-size:24px;font-weight:800;color:var(--ink);}
-  .stat-label{font-size:12px;color:var(--ink-soft);margin-top:4px;font-weight:500;}
+  .stat-card::before{
+    content:"";position:absolute;top:-45%;right:-25%;width:150px;height:150px;border-radius:50%;
+    background:radial-gradient(circle,rgba(37,99,235,.18),transparent 70%);pointer-events:none;
+  }
+  .stat-card:hover{
+    transform:translateY(-4px);border-color:rgba(37,99,235,.28);
+    box-shadow:0 16px 34px rgba(37,99,235,.16),var(--shadow-md);
+  }
+  .stat-num{
+    position:relative;font-family:var(--display);font-size:26px;font-weight:800;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .stat-label{position:relative;font-size:12px;color:var(--ink-soft);margin-top:5px;font-weight:600;}
 
   /* ===== HOME EXTRA SECTIONS ===== */
   .home-section{padding:80px 0;}
