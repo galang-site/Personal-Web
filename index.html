@@ -192,6 +192,21 @@
   </div>
 </footer>
 
+<!-- DETAIL MODAL — expands a project/article to full view on click -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    <div class="modal-media" id="modalMedia"></div>
+    <div class="modal-body">
+      <span class="eyebrow" id="modalEyebrow"></span>
+      <h2 id="modalTitle"></h2>
+      <div class="modal-meta" id="modalMeta"></div>
+      <div class="modal-content" id="modalContent"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/config.js"></script>
 <script src="assets/site.js"></script>

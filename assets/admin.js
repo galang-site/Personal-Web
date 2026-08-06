@@ -127,9 +127,10 @@ const SECTIONS = {
     fields: [
       { key: "title", label: "Title", type: "text" },
       { key: "category", label: "Category", type: "text", placeholder: "e.g. EPC, Business, Management" },
-      { key: "description", label: "Description", type: "textarea" },
+      { key: "description", label: "Short description (shown on cards)", type: "textarea" },
+      { key: "content", label: "Full write-up (shown when a visitor clicks the project)", type: "longtext" },
       { key: "tags", label: "Tags (comma-separated)", type: "csv" },
-      { key: "link", label: "Link (optional)", type: "text", placeholder: "https://..." },
+      { key: "link", label: "External link (optional — shown as a button inside the expanded view)", type: "text", placeholder: "https://..." },
       { key: "image_url", label: "Project image", type: "image", folder: "projects" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
@@ -140,9 +141,10 @@ const SECTIONS = {
     fields: [
       { key: "title", label: "Title", type: "text" },
       { key: "category", label: "Category", type: "text" },
-      { key: "excerpt", label: "Excerpt", type: "textarea" },
+      { key: "excerpt", label: "Excerpt (shown in the list)", type: "textarea" },
+      { key: "content", label: "Full article (shown when a visitor clicks to read)", type: "longtext" },
       { key: "article_date", label: "Date label", type: "text", placeholder: "e.g. Aug 2026" },
-      { key: "link", label: "Link (optional)", type: "text", placeholder: "https://..." },
+      { key: "link", label: "External link (optional — e.g. if it's also published on Medium/LinkedIn)", type: "text", placeholder: "https://..." },
       { key: "image_url", label: "Cover image", type: "image", folder: "articles" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
@@ -338,6 +340,7 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
   function fieldHtml(f, value) {
     const id = `ff_${f.key}`;
     if (f.type === "textarea") return `<div class="field"><label>${esc(f.label)}</label><textarea id="${id}">${esc(value ?? "")}</textarea></div>`;
+    if (f.type === "longtext") return `<div class="field"><label>${esc(f.label)}</label><textarea id="${id}" style="min-height:220px;">${esc(value ?? "")}</textarea><div class="hint">Write in plain paragraphs — leave a blank line between paragraphs.</div></div>`;
     if (f.type === "lines") return `<div class="field"><label>${esc(f.label)}</label><textarea id="${id}">${esc(arrayToLines(value))}</textarea><div class="hint">One item per line.</div></div>`;
     if (f.type === "csv") return `<div class="field"><label>${esc(f.label)}</label><input id="${id}" value="${esc(arrayToCsv(value))}"><div class="hint">Separate with commas.</div></div>`;
     if (f.type === "checkbox") return `<div class="field"><label><input type="checkbox" id="${id}" ${value ? "checked" : ""} style="width:auto;display:inline-block;margin-right:8px;"> ${esc(f.label)}</label></div>`;

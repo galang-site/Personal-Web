@@ -75,6 +75,7 @@ create table if not exists projects (
   title text not null,
   category text default 'EPC',
   description text default '',
+  content text default '',
   tags jsonb default '[]',
   link text default '#',
   image_url text default '',
@@ -87,6 +88,7 @@ create table if not exists articles (
   title text not null,
   category text default '',
   excerpt text default '',
+  content text default '',
   article_date text default '',
   link text default '#',
   image_url text default '',
@@ -105,6 +107,8 @@ create table if not exists testimonials (
 -- ---------- Backfill columns for projects/tables created before this update ----------
 alter table projects add column if not exists image_url text default '';
 alter table articles add column if not exists image_url text default '';
+alter table projects add column if not exists content text default '';
+alter table articles add column if not exists content text default '';
 
 -- =====================================================================
 -- ROW LEVEL SECURITY
@@ -244,21 +248,133 @@ end $$;
 
 do $$ begin
   if not exists (select 1 from projects) then
-    insert into projects (title, category, description, tags, link, sort_order) values
-      ('EPC Tender Cost Estimation — Oil & Gas Facility', 'EPC', 'Led cost breakdown, scope evaluation, and vendor coordination to prepare a competitive EPC tender submission in the oil & gas sector.', '["EPC", "Cost Estimation", "Oil & Gas"]', '#', 1),
-      ('RAB & Estimation Workflow Improvement', 'Business', 'Streamlined the tender cost estimation and RAB process to improve turnaround time and accuracy across the estimating team.', '["Process Improvement", "Cost Management"]', '#', 2),
-      ('Power Plant Quality Assurance Program', 'Management', 'Set up inspection standards and quality documentation processes for a coal-fired steam power plant construction project.', '["QA/QC", "Project Control"]', '#', 3);
+    insert into projects (title, category, description, content, tags, link, sort_order) values
+      ('EPC Tender Cost Estimation — Oil & Gas Facility', 'EPC', 'Led cost breakdown, scope evaluation, and vendor coordination to prepare a competitive EPC tender submission in the oil & gas sector.',
+       'This project involved preparing a full tender cost estimate for an oil & gas facility under a tight submission deadline.
+
+I led the cost breakdown process across civil, mechanical, and electrical scopes, working closely with the estimating team to make sure every line item was traceable back to the client''s bill of quantities.
+
+A key part of the work was vendor coordination — collecting and comparing quotations, negotiating pricing and terms, and folding the results back into the overall tender price without losing sight of the schedule.
+
+The submission was delivered on time and was competitive enough to move the company forward in the bidding process, which reinforced how much a disciplined, well-documented estimate matters in EPC tendering.',
+       '["EPC", "Cost Estimation", "Oil & Gas"]', '#', 1),
+      ('RAB & Estimation Workflow Improvement', 'Business', 'Streamlined the tender cost estimation and RAB process to improve turnaround time and accuracy across the estimating team.',
+       'The estimating team was spending too much time on repetitive parts of the RAB (cost budget plan) process, and small inconsistencies were creeping into submissions under deadline pressure.
+
+I mapped out the existing workflow end-to-end, identified where handoffs and rework were happening, and proposed a simplified process with clearer templates and checkpoints.
+
+After rolling it out, turnaround time on RAB preparation improved noticeably, and the number of last-minute corrections dropped — freeing up the team to spend more time on the parts of estimation that actually need judgment, like vendor negotiation and risk assessment.',
+       '["Process Improvement", "Cost Management"]', '#', 2),
+      ('Power Plant Quality Assurance Program', 'Management', 'Set up inspection standards and quality documentation processes for a coal-fired steam power plant construction project.',
+       'As QA/QC Engineer on a coal-fired steam power plant project in East Kalimantan, I was responsible for building out inspection, testing, and evaluation standards aligned with local and international requirements.
+
+I worked across suppliers, the production team, and the client to resolve quality issues as they came up, and set up a structured system for raising Requests for Inspection and maintaining quality documentation.
+
+Managing nonconformance reports and punch lists through to close-out was a major part of the role, and by the end of the project I prepared the final hand-over documentation for the power plant buildings and utilities — a strong grounding in how quality discipline holds a project together.',
+       '["QA/QC", "Project Control"]', '#', 3);
   end if;
 end $$;
 
 do $$ begin
   if not exists (select 1 from articles) then
-    insert into articles (title, category, excerpt, article_date, link, sort_order) values
-      ('Five Lessons From My First EPC Project', 'EPC Insights', 'The things you don''t learn in a classroom but that matter the moment you''re on site.', 'Jul 2026', '#', 1),
-      ('From Engineer to Project Manager: What Actually Changes', 'Career', 'Reflections on the shift in mindset that comes with taking on managerial responsibility.', 'Jun 2026', '#', 2),
-      ('How to Build an Accurate RAB for an EPCC Project', 'Knowledge Sharing', 'A practical guide to preparing a cost estimate from a client''s BOQ.', 'May 2026', '#', 3);
+    insert into articles (title, category, excerpt, content, article_date, link, sort_order) values
+      ('Five Lessons From My First EPC Project', 'EPC Insights', 'The things you don''t learn in a classroom but that matter the moment you''re on site.',
+       'When I joined my first EPC project, I thought the technical knowledge from my civil engineering degree would carry me most of the way. It helped, but it wasn''t the full picture.
+
+The first lesson was how much EPC work depends on coordination, not just calculation. A cost estimate is only as good as the assumptions behind it, and those assumptions come from conversations with vendors, clients, and the field team — not from a spreadsheet alone.
+
+The second was the value of documentation discipline. Every scope clarification, every price negotiation, every change needs a paper trail, because tender decisions get questioned months later and you need to be able to show your reasoning.
+
+The third was learning to read a bill of quantities the way an experienced estimator does — not just totaling numbers, but spotting where scope is ambiguous or where risk is hiding.
+
+The fourth was that deadlines in EPC tendering are rarely negotiable, so building buffer into your own personal workflow matters more than trying to be perfect.
+
+And the fifth, maybe the most important: staying calm under pressure builds more credibility with a team than technical skill alone. People remember how you handled the crunch, not just whether the numbers were right.',
+       'Jul 2026', '#', 1),
+      ('From Engineer to Project Manager: What Actually Changes', 'Career', 'Reflections on the shift in mindset that comes with taking on managerial responsibility.',
+       'Moving from an individual contributor role into leading a team of estimators changed more than my job title — it changed what "doing good work" actually means day to day.
+
+As an engineer, success was mostly about the accuracy of my own output: a correct cost breakdown, a clean take-off, a well-supported estimate. As a coordinator, success became less about what I personally produced and more about whether the whole team was set up to produce good work — clear priorities, the right information at the right time, and enough context for people to make good judgment calls without me in the room.
+
+The hardest adjustment was learning to let go of controlling every detail myself, while still being accountable for the outcome. That meant investing more time in reviewing and coaching, and less time doing the work directly — which felt uncomfortable at first, especially under deadline pressure when it''s tempting to just do it yourself.
+
+I''m still early in this transition toward broader project and business leadership, but the biggest shift so far has been thinking in terms of the team''s capability, not just my own.',
+       'Jun 2026', '#', 2),
+      ('How to Build an Accurate RAB for an EPCC Project', 'Knowledge Sharing', 'A practical guide to preparing a cost estimate from a client''s BOQ.',
+       'A Rencana Anggaran Biaya (RAB), or cost budget plan, is only as reliable as the process behind it. Here''s the approach I follow when building one from a client''s bill of quantities (BOQ).
+
+Start by reading the BOQ line by line against the drawings and specifications — not just trusting the descriptions. Ambiguous scope is where estimates go wrong, so flag anything unclear early and get it clarified before pricing it.
+
+Break the work down into a clear Work Breakdown Structure so every cost component — materials, labor, equipment, subcontracted work — has a home. This also makes the estimate easier to review and defend later.
+
+Collect vendor quotations for every major material and equipment item, and don''t rely on outdated price lists. Prices move, and a stale reference number in a competitive tender can cost you the bid or your margin.
+
+Build in a clear contingency and escalation allowance based on project duration and market volatility, rather than a flat arbitrary percentage — this is where experience and judgment matter most.
+
+Finally, cross-check the total against a sanity benchmark — cost per unit area, cost per capacity, or comparable past projects — before it goes out the door. A RAB that "looks right" on that final check has usually caught most of its own mistakes.',
+       'May 2026', '#', 3);
   end if;
 end $$;
+
+-- Backfill full write-ups for the placeholder rows above if they were
+-- seeded before the "content" column existed (safe: only fills empty content).
+update projects set content = 'This project involved preparing a full tender cost estimate for an oil & gas facility under a tight submission deadline.
+
+I led the cost breakdown process across civil, mechanical, and electrical scopes, working closely with the estimating team to make sure every line item was traceable back to the client''s bill of quantities.
+
+A key part of the work was vendor coordination — collecting and comparing quotations, negotiating pricing and terms, and folding the results back into the overall tender price without losing sight of the schedule.
+
+The submission was delivered on time and was competitive enough to move the company forward in the bidding process, which reinforced how much a disciplined, well-documented estimate matters in EPC tendering.'
+where title = 'EPC Tender Cost Estimation — Oil & Gas Facility' and (content is null or content = '');
+
+update projects set content = 'The estimating team was spending too much time on repetitive parts of the RAB (cost budget plan) process, and small inconsistencies were creeping into submissions under deadline pressure.
+
+I mapped out the existing workflow end-to-end, identified where handoffs and rework were happening, and proposed a simplified process with clearer templates and checkpoints.
+
+After rolling it out, turnaround time on RAB preparation improved noticeably, and the number of last-minute corrections dropped — freeing up the team to spend more time on the parts of estimation that actually need judgment, like vendor negotiation and risk assessment.'
+where title = 'RAB & Estimation Workflow Improvement' and (content is null or content = '');
+
+update projects set content = 'As QA/QC Engineer on a coal-fired steam power plant project in East Kalimantan, I was responsible for building out inspection, testing, and evaluation standards aligned with local and international requirements.
+
+I worked across suppliers, the production team, and the client to resolve quality issues as they came up, and set up a structured system for raising Requests for Inspection and maintaining quality documentation.
+
+Managing nonconformance reports and punch lists through to close-out was a major part of the role, and by the end of the project I prepared the final hand-over documentation for the power plant buildings and utilities — a strong grounding in how quality discipline holds a project together.'
+where title = 'Power Plant Quality Assurance Program' and (content is null or content = '');
+
+update articles set content = 'When I joined my first EPC project, I thought the technical knowledge from my civil engineering degree would carry me most of the way. It helped, but it wasn''t the full picture.
+
+The first lesson was how much EPC work depends on coordination, not just calculation. A cost estimate is only as good as the assumptions behind it, and those assumptions come from conversations with vendors, clients, and the field team — not from a spreadsheet alone.
+
+The second was the value of documentation discipline. Every scope clarification, every price negotiation, every change needs a paper trail, because tender decisions get questioned months later and you need to be able to show your reasoning.
+
+The third was learning to read a bill of quantities the way an experienced estimator does — not just totaling numbers, but spotting where scope is ambiguous or where risk is hiding.
+
+The fourth was that deadlines in EPC tendering are rarely negotiable, so building buffer into your own personal workflow matters more than trying to be perfect.
+
+And the fifth, maybe the most important: staying calm under pressure builds more credibility with a team than technical skill alone. People remember how you handled the crunch, not just whether the numbers were right.'
+where title = 'Five Lessons From My First EPC Project' and (content is null or content = '');
+
+update articles set content = 'Moving from an individual contributor role into leading a team of estimators changed more than my job title — it changed what "doing good work" actually means day to day.
+
+As an engineer, success was mostly about the accuracy of my own output: a correct cost breakdown, a clean take-off, a well-supported estimate. As a coordinator, success became less about what I personally produced and more about whether the whole team was set up to produce good work — clear priorities, the right information at the right time, and enough context for people to make good judgment calls without me in the room.
+
+The hardest adjustment was learning to let go of controlling every detail myself, while still being accountable for the outcome. That meant investing more time in reviewing and coaching, and less time doing the work directly — which felt uncomfortable at first, especially under deadline pressure when it''s tempting to just do it yourself.
+
+I''m still early in this transition toward broader project and business leadership, but the biggest shift so far has been thinking in terms of the team''s capability, not just my own.'
+where title = 'From Engineer to Project Manager: What Actually Changes' and (content is null or content = '');
+
+update articles set content = 'A Rencana Anggaran Biaya (RAB), or cost budget plan, is only as reliable as the process behind it. Here''s the approach I follow when building one from a client''s bill of quantities (BOQ).
+
+Start by reading the BOQ line by line against the drawings and specifications — not just trusting the descriptions. Ambiguous scope is where estimates go wrong, so flag anything unclear early and get it clarified before pricing it.
+
+Break the work down into a clear Work Breakdown Structure so every cost component — materials, labor, equipment, subcontracted work — has a home. This also makes the estimate easier to review and defend later.
+
+Collect vendor quotations for every major material and equipment item, and don''t rely on outdated price lists. Prices move, and a stale reference number in a competitive tender can cost you the bid or your margin.
+
+Build in a clear contingency and escalation allowance based on project duration and market volatility, rather than a flat arbitrary percentage — this is where experience and judgment matter most.
+
+Finally, cross-check the total against a sanity benchmark — cost per unit area, cost per capacity, or comparable past projects — before it goes out the door. A RAB that "looks right" on that final check has usually caught most of its own mistakes.'
+where title = 'How to Build an Accurate RAB for an EPCC Project' and (content is null or content = '');
 
 do $$ begin
   if not exists (select 1 from testimonials) then

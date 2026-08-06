@@ -11,6 +11,9 @@ const mediaHtml = (baseClass, imageUrl, label, alt) =>
   imageUrl
     ? `<div class="${baseClass} has-image"><img src="${imageUrl}" alt="${alt || ""}" loading="lazy"></div>`
     : `<div class="${baseClass}">${label || ""}</div>`;
+// Turns plain text (blank-line-separated paragraphs) into <p> HTML for the detail modal.
+const textToParagraphs = (text) =>
+  (text || "").split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
 
 async function loadAll() {
   const [profileRes, aboutRes, statsRes, expRes, compRes, projRes, artRes, testiRes] = await Promise.all([
@@ -60,10 +63,57 @@ function render({ profile, about, stats, experience, companies, projects, articl
   document.addEventListener("click", (e) => {
     const tabBtn = e.target.closest("[data-tab]");
     const gotoBtn = e.target.closest("[data-goto]");
+    const artBtn = e.target.closest("[data-open-article]");
+    const projBtn = e.target.closest("[data-open-project]");
     if (tabBtn) goTo(tabBtn.dataset.tab);
     if (gotoBtn) goTo(gotoBtn.dataset.goto);
+    if (artBtn) {
+      const a = articles.find(x => String(x.id) === artBtn.dataset.openArticle);
+      if (a) openArticleModal(a);
+    }
+    if (projBtn) {
+      const p = projects.find(x => String(x.id) === projBtn.dataset.openProject);
+      if (p) openProjectModal(p);
+    }
   });
   $("navToggle").addEventListener("click", () => $("tabs").classList.toggle("open"));
+
+  // DETAIL MODAL — expands a project/article to a full read view on click.
+  function openModal({ eyebrow, title, meta, image, contentHtml, link }) {
+    $("modalEyebrow").textContent = eyebrow || "";
+    $("modalTitle").textContent = title || "";
+    $("modalMeta").textContent = meta || "";
+    $("modalMedia").style.display = image ? "block" : "none";
+    $("modalMedia").innerHTML = image ? `<img src="${image}" alt="${title || ""}">` : "";
+    $("modalContent").innerHTML = contentHtml || `<p>More detail coming soon.</p>`;
+    $("modalActions").innerHTML = (link && link !== "#")
+      ? `<a class="btn ghost" href="${link}" target="_blank" rel="noopener">View original / external link ↗</a>`
+      : "";
+    $("detailModal").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeModal() {
+    $("detailModal").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  function openArticleModal(a) {
+    openModal({
+      eyebrow: a.category, title: a.title, meta: a.article_date || "", image: a.image_url,
+      contentHtml: textToParagraphs(a.content) || `<p>${a.excerpt || ""}</p>`,
+      link: a.link,
+    });
+  }
+  function openProjectModal(p) {
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    openModal({
+      eyebrow: p.category, title: p.title, meta: tags.join(" · "), image: p.image_url,
+      contentHtml: textToParagraphs(p.content) || `<p>${p.description || ""}</p>`,
+      link: p.link,
+    });
+  }
+  $("modalClose").addEventListener("click", closeModal);
+  $("detailModal").addEventListener("click", (e) => { if (e.target.id === "detailModal") closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
   // HERO
   $("heroBadgeText").textContent = profile.badge_text || "";
@@ -84,14 +134,14 @@ function render({ profile, about, stats, experience, companies, projects, articl
 
   // FEED — recent writing (home)
   $("homeFeed").innerHTML = articles.slice(0,3).map((a,i) => `
-    <a class="feed-card ${i===0?'featured':''}" href="${a.link || '#'}" target="_blank" rel="noopener">
+    <div class="feed-card ${i===0?'featured':''}" data-open-article="${a.id}">
       ${mediaHtml("feed-media", a.image_url, a.category, a.title)}
       <div class="feed-body">
         <h3>${a.title}</h3>
         <p>${a.excerpt || ""}</p>
         <div class="feed-meta">${a.article_date || ""}</div>
       </div>
-    </a>
+    </div>
   `).join("") || `<div class="empty-state">No writing published yet.</div>`;
 
   // SPOTLIGHT — one featured project (home)
@@ -106,7 +156,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
         <h3>${p.title}</h3>
         <p>${p.description || ""}</p>
         <div class="card-tags">${tags.map(t=>`<span>${t}</span>`).join("")}</div>
-        <div style="margin-top:8px;"><a class="btn primary" href="${p.link || '#'}" target="_blank" rel="noopener">View details</a></div>
+        <div style="margin-top:8px;"><button class="btn primary" data-open-project="${p.id}">View details</button></div>
       </div>
     `;
   })();
@@ -165,14 +215,14 @@ function render({ profile, about, stats, experience, companies, projects, articl
     $("projectGrid").innerHTML = list.map(p => {
       const tags = Array.isArray(p.tags) ? p.tags : [];
       return `
-      <a class="card" href="${p.link || '#'}" target="_blank" rel="noopener">
+      <div class="card" data-open-project="${p.id}">
         ${mediaHtml("card-media", p.image_url, p.category, p.title)}
         <div class="card-body">
           <h3>${p.title}</h3>
           <p>${p.description || ""}</p>
           <div class="card-tags">${tags.map(t=>`<span>${t}</span>`).join("")}</div>
         </div>
-      </a>
+      </div>
     `; }).join("") || `<div class="empty-state">No projects in this category yet.</div>`;
   }
   $("projectFilters").innerHTML = categories.map(c => `<button class="filter-btn ${c===activeCategory?'active':''}" data-cat="${c}">${c}</button>`).join("");
@@ -187,14 +237,14 @@ function render({ profile, about, stats, experience, companies, projects, articl
 
   // ARTICLES
   $("articleList").innerHTML = articles.map(a => `
-    <a class="article-item" href="${a.link || '#'}" target="_blank" rel="noopener">
+    <div class="article-item" data-open-article="${a.id}">
       ${a.image_url ? `<img class="article-thumb" src="${a.image_url}" alt="${a.title}" loading="lazy">` : ""}
       <div style="flex:1;min-width:0;"><span class="article-cat">${a.category || ""}</span>
         <div class="article-title">${a.title}</div>
         <div class="article-excerpt">${a.excerpt || ""}</div>
       </div>
       <div class="article-date">${a.article_date || ""}</div>
-    </a>
+    </div>
   `).join("") || `<div class="empty-state">No writing published yet.</div>`;
 
   // TESTIMONIALS
