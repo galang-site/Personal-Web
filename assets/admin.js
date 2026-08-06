@@ -386,7 +386,7 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
   function fieldHtml(f, value) {
     const id = `ff_${f.key}`;
     if (f.type === "textarea") return `<div class="field"><label>${esc(f.label)}</label><textarea id="${id}">${esc(value ?? "")}</textarea></div>`;
-    if (f.type === "longtext") return `<div class="field"><label>${esc(f.label)}</label><textarea id="${id}" style="min-height:220px;">${esc(value ?? "")}</textarea><div class="hint">Write in plain paragraphs — leave a blank line between paragraphs.</div></div>`;
+    if (f.type === "longtext") return `<div class="field"><label>${esc(f.label)}</label><textarea id="${id}" style="min-height:220px;">${esc(value ?? "")}</textarea><div class="hint">Write in plain paragraphs — leave a blank line between paragraphs. To place a gallery photo inline at a specific spot, put its number on its own line/paragraph, e.g. <code>[gambar:2]</code> for the 2nd photo in the gallery below. Any gallery photo you don't reference this way still shows automatically at the bottom.</div></div>`;
     if (f.type === "lines") return `<div class="field"><label>${esc(f.label)}</label><textarea id="${id}">${esc(arrayToLines(value))}</textarea><div class="hint">One item per line.</div></div>`;
     if (f.type === "csv") return `<div class="field"><label>${esc(f.label)}</label><input id="${id}" value="${esc(arrayToCsv(value))}"><div class="hint">Separate with commas.</div></div>`;
     if (f.type === "checkbox") return `<div class="field"><label><input type="checkbox" id="${id}" ${value ? "checked" : ""} style="width:auto;display:inline-block;margin-right:8px;"> ${esc(f.label)}</label></div>`;
@@ -410,10 +410,10 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
         <label>${esc(f.label)}</label>
         <input type="hidden" id="${id}" value='${esc(JSON.stringify(arr))}'>
         <div class="gallery-field" id="${id}_grid">
-          ${arr.map((url, i) => `<div class="gallery-thumb"><img src="${esc(url)}" alt=""><button type="button" class="gallery-remove" data-remove="${i}">&times;</button></div>`).join("")}
+          ${arr.map((url, i) => `<div class="gallery-thumb"><span class="gallery-num">${i + 1}</span><img src="${esc(url)}" alt=""><button type="button" class="gallery-remove" data-remove="${i}">&times;</button></div>`).join("")}
         </div>
         <input type="file" id="${id}_file" accept="image/*" multiple>
-        <div class="hint" id="${id}_status">${arr.length ? arr.length + " photo(s) in gallery." : "Select one or more images to add to the gallery."}</div>
+        <div class="hint" id="${id}_status">${arr.length ? arr.length + " photo(s) in gallery. Use the number shown on each thumbnail with [gambar:N] in the write-up above to place it inline." : "Select one or more images to add to the gallery."}</div>
       </div>`;
     }
     return `<div class="field"><label>${esc(f.label)}</label><input id="${id}" value="${esc(value ?? "")}" placeholder="${esc(f.placeholder || "")}"></div>`;
@@ -439,9 +439,9 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
     let arr = [];
     try { arr = JSON.parse(hidden.value || "[]"); } catch (e) { arr = []; }
     function renderGrid() {
-      grid.innerHTML = arr.map((url, i) => `<div class="gallery-thumb"><img src="${url}" alt=""><button type="button" class="gallery-remove" data-remove="${i}">&times;</button></div>`).join("");
+      grid.innerHTML = arr.map((url, i) => `<div class="gallery-thumb"><span class="gallery-num">${i + 1}</span><img src="${url}" alt=""><button type="button" class="gallery-remove" data-remove="${i}">&times;</button></div>`).join("");
       hidden.value = JSON.stringify(arr);
-      statusEl.textContent = arr.length ? arr.length + " photo(s) in gallery." : "Select one or more images to add to the gallery.";
+      statusEl.textContent = arr.length ? arr.length + " photo(s) in gallery. Use the number shown on each thumbnail with [gambar:N] in the write-up above to place it inline." : "Select one or more images to add to the gallery.";
     }
     grid.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-remove]");

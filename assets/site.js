@@ -20,6 +20,30 @@ const mediaHtml = (baseClass, imageUrl, label, alt) =>
 const textToParagraphs = (text) =>
   (text || "").split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
 
+// Lets a gallery photo be dropped at a specific spot in the write-up instead of
+// always landing in one block at the bottom. Author writes a line on its own,
+// like "[gambar:2]", inside the content textarea (2 = the photo's position in
+// the gallery uploader). We swap that line for an inline <img>, and anything
+// not referenced this way still shows in the trailing gallery as before.
+function renderContentWithImages(text, images) {
+  images = Array.isArray(images) ? images : [];
+  const used = new Set();
+  const blocks = (text || "").split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const html = blocks.map(block => {
+    const m = block.match(/^\[(?:gambar|image|img|foto)\s*:\s*(\d+)\]$/i);
+    if (m) {
+      const idx = parseInt(m[1], 10) - 1;
+      const url = images[idx];
+      if (!url) return "";
+      used.add(idx);
+      return `<figure class="content-image"><img src="${url}" alt="" loading="lazy"></figure>`;
+    }
+    return `<p>${block.replace(/\n/g, "<br>")}</p>`;
+  }).join("");
+  const remaining = images.filter((_, i) => !used.has(i));
+  return { html, remaining };
+}
+
 async function loadAll() {
   const [profileRes, aboutRes, statsRes, expRes, compRes, projRes, artRes, testiRes] = await Promise.all([
     sb.from("profile").select("*").eq("id", 1).single(),
@@ -136,18 +160,22 @@ function render({ profile, about, stats, experience, companies, projects, articl
     else openProjectDetailPage(data);
   }
   function openArticleDetailPage(a) {
+    const imgs = Array.isArray(a.images) ? a.images : [];
+    const { html, remaining } = renderContentWithImages(a.content, imgs);
     openDetailPage({
       eyebrow: a.category, title: a.title, meta: a.article_date || "", cover: a.image_url,
-      contentHtml: textToParagraphs(a.content) || `<p>${a.excerpt || ""}</p>`,
-      images: Array.isArray(a.images) ? a.images : [], link: a.link,
+      contentHtml: html || `<p>${a.excerpt || ""}</p>`,
+      images: remaining, link: a.link,
     });
   }
   function openProjectDetailPage(p) {
     const tags = Array.isArray(p.tags) ? p.tags : [];
+    const imgs = Array.isArray(p.images) ? p.images : [];
+    const { html, remaining } = renderContentWithImages(p.content, imgs);
     openDetailPage({
       eyebrow: p.category, title: p.title, meta: tags.join(" · "), cover: p.image_url,
-      contentHtml: textToParagraphs(p.content) || `<p>${p.description || ""}</p>`,
-      images: Array.isArray(p.images) ? p.images : [], link: p.link,
+      contentHtml: html || `<p>${p.description || ""}</p>`,
+      images: remaining, link: p.link,
     });
   }
   function openDetailPage({ eyebrow, title, meta, cover, contentHtml, images, link }) {
