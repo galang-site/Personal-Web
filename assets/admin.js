@@ -129,10 +129,11 @@ const SECTIONS = {
       { key: "title", label: "Title", type: "text" },
       { key: "category", label: "Category", type: "text", placeholder: "e.g. EPC, Business, Management" },
       { key: "description", label: "Short description (shown on cards)", type: "textarea" },
-      { key: "content", label: "Full write-up (shown when a visitor clicks the project)", type: "longtext" },
+      { key: "content", label: "Full write-up (shown on the full read page)", type: "longtext" },
       { key: "tags", label: "Tags (comma-separated)", type: "csv" },
-      { key: "link", label: "External link (optional — shown as a button inside the expanded view)", type: "text", placeholder: "https://..." },
+      { key: "link", label: "External link (optional — shown as a button on the full read page)", type: "text", placeholder: "https://..." },
       { key: "image_url", label: "Project image", type: "image", folder: "projects" },
+      { key: "images", label: "Extra photos (shown as a gallery on the full read page)", type: "gallery", folder: "projects" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
     rowTitle: r => r.title, rowSubtitle: r => r.category,
@@ -143,10 +144,11 @@ const SECTIONS = {
       { key: "title", label: "Title", type: "text" },
       { key: "category", label: "Category", type: "text" },
       { key: "excerpt", label: "Excerpt (shown in the list)", type: "textarea" },
-      { key: "content", label: "Full article (shown when a visitor clicks to read)", type: "longtext" },
+      { key: "content", label: "Full article (shown on the full read page)", type: "longtext" },
       { key: "article_date", label: "Date label", type: "text", placeholder: "e.g. Aug 2026" },
       { key: "link", label: "External link (optional — e.g. if it's also published on Medium/LinkedIn)", type: "text", placeholder: "https://..." },
       { key: "image_url", label: "Cover image", type: "image", folder: "articles" },
+      { key: "images", label: "Extra photos (shown as a gallery on the full read page)", type: "gallery", folder: "articles" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
     rowTitle: r => r.title, rowSubtitle: r => `${r.category || ""} · ${r.article_date || ""}`,
@@ -370,6 +372,19 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
           </div>
         </div>
       </div>`;
+    if (f.type === "gallery") {
+      const arr = Array.isArray(value) ? value : [];
+      return `
+      <div class="field">
+        <label>${esc(f.label)}</label>
+        <input type="hidden" id="${id}" value='${esc(JSON.stringify(arr))}'>
+        <div class="gallery-field" id="${id}_grid">
+          ${arr.map((url, i) => `<div class="gallery-thumb"><img src="${esc(url)}" alt=""><button type="button" class="gallery-remove" data-remove="${i}">&times;</button></div>`).join("")}
+        </div>
+        <input type="file" id="${id}_file" accept="image/*" multiple>
+        <div class="hint" id="${id}_status">${arr.length ? arr.length + " photo(s) in gallery." : "Select one or more images to add to the gallery."}</div>
+      </div>`;
+    }
     return `<div class="field"><label>${esc(f.label)}</label><input id="${id}" value="${esc(value ?? "")}" placeholder="${esc(f.placeholder || "")}"></div>`;
   }
 
@@ -379,7 +394,45 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
     if (f.type === "csv") return csvToArray(el.value);
     if (f.type === "checkbox") return el.checked;
     if (f.type === "number") return Number(el.value) || 0;
+    if (f.type === "gallery") { try { return JSON.parse(el.value || "[]"); } catch (e) { return []; } }
     return el.value;
+  }
+
+  function wireGalleryField(f) {
+    const id = `ff_${f.key}`;
+    const hidden = document.getElementById(id);
+    const grid = document.getElementById(`${id}_grid`);
+    const fileInput = document.getElementById(`${id}_file`);
+    const statusEl = document.getElementById(`${id}_status`);
+    if (!hidden || !fileInput) return;
+    let arr = [];
+    try { arr = JSON.parse(hidden.value || "[]"); } catch (e) { arr = []; }
+    function renderGrid() {
+      grid.innerHTML = arr.map((url, i) => `<div class="gallery-thumb"><img src="${url}" alt=""><button type="button" class="gallery-remove" data-remove="${i}">&times;</button></div>`).join("");
+      hidden.value = JSON.stringify(arr);
+      statusEl.textContent = arr.length ? arr.length + " photo(s) in gallery." : "Select one or more images to add to the gallery.";
+    }
+    grid.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-remove]");
+      if (!btn) return;
+      arr.splice(Number(btn.dataset.remove), 1);
+      renderGrid();
+    });
+    fileInput.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      statusEl.textContent = `Uploading ${files.length} image(s)…`;
+      for (const file of files) {
+        try {
+          const url = await uploadImage(file, f.folder || "misc");
+          arr.push(url);
+          renderGrid();
+        } catch (err) {
+          statusEl.textContent = "Upload failed: " + err.message;
+        }
+      }
+      fileInput.value = "";
+    });
   }
 
   function showForm(row) {
@@ -415,6 +468,7 @@ async function renderListSection({ table, title, subtitle, fields, rowTitle, row
         }
       });
     });
+    fields.filter(f => f.type === "gallery").forEach(wireGalleryField);
 
     $("cancelFormBtn").addEventListener("click", () => { $("formArea").innerHTML = ""; });
     $("submitFormBtn").addEventListener("click", async () => {

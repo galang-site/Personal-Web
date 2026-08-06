@@ -81,6 +81,7 @@ create table if not exists projects (
   tags jsonb default '[]',
   link text default '#',
   image_url text default '',
+  images jsonb default '[]',
   sort_order int default 0
 );
 
@@ -94,6 +95,7 @@ create table if not exists articles (
   article_date text default '',
   link text default '#',
   image_url text default '',
+  images jsonb default '[]',
   sort_order int default 0
 );
 
@@ -113,6 +115,8 @@ alter table projects add column if not exists content text default '';
 alter table articles add column if not exists content text default '';
 alter table profile add column if not exists about_photo text default '';
 alter table companies add column if not exists logo_url text default '';
+alter table projects add column if not exists images jsonb default '[]';
+alter table articles add column if not exists images jsonb default '[]';
 
 -- =====================================================================
 -- ROW LEVEL SECURITY

@@ -6,6 +6,11 @@ const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANO
 
 const $ = (id) => document.getElementById(id);
 const initials = (name) => (name || "").split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+// Inline SVG icons (no emoji) used across the public site.
+const ICON_PIN = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+const ICON_MAIL = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>`;
+const ICON_BRIEFCASE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`;
+const ICON_EXTERNAL = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>`;
 // Renders a category-label placeholder, or a real photo if image_url is set.
 const mediaHtml = (baseClass, imageUrl, label, alt) =>
   imageUrl
@@ -48,7 +53,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
     { id: "home", label: "Home" },
     { id: "about", label: "About" },
     { id: "experience", label: "Experience" },
-    { id: "companies", label: "Companies" },
+    { id: "companies", label: "Clients" },
     { id: "projects", label: "Portfolio" },
     { id: "articles", label: "Writing" },
   ];
@@ -77,17 +82,21 @@ function render({ profile, about, stats, experience, companies, projects, articl
   });
   $("navToggle").addEventListener("click", () => $("tabs").classList.toggle("open"));
 
-  // DETAIL MODAL — expands a project/article to a full read view on click.
-  function openModal({ eyebrow, title, meta, image, contentHtml, link }) {
+  // QUICK-PREVIEW MODAL — short excerpt/description, with a "Read more" button
+  // that opens the full read page (see below) for the same item.
+  let currentItem = null; // { type: 'article'|'project', data }
+  function openModal({ eyebrow, title, meta, image, previewHtml, link }) {
     $("modalEyebrow").textContent = eyebrow || "";
     $("modalTitle").textContent = title || "";
     $("modalMeta").textContent = meta || "";
     $("modalMedia").style.display = image ? "block" : "none";
     $("modalMedia").innerHTML = image ? `<img src="${image}" alt="${title || ""}">` : "";
-    $("modalContent").innerHTML = contentHtml || `<p>More detail coming soon.</p>`;
-    $("modalActions").innerHTML = (link && link !== "#")
-      ? `<a class="btn ghost" href="${link}" target="_blank" rel="noopener">View original / external link ↗</a>`
-      : "";
+    $("modalContent").innerHTML = previewHtml || `<p>More detail coming soon.</p>`;
+    $("modalActions").innerHTML = `
+      <button class="btn primary" id="modalReadMoreBtn">Lihat Selengkapnya →</button>
+      ${(link && link !== "#") ? `<a class="btn ghost" href="${link}" target="_blank" rel="noopener">${ICON_EXTERNAL}View original / external link</a>` : ""}
+    `;
+    $("modalReadMoreBtn").addEventListener("click", () => { closeModal(); openDetailPageForCurrentItem(); });
     $("detailModal").classList.add("open");
     document.body.style.overflow = "hidden";
   }
@@ -96,29 +105,82 @@ function render({ profile, about, stats, experience, companies, projects, articl
     document.body.style.overflow = "";
   }
   function openArticleModal(a) {
+    currentItem = { type: "article", data: a };
     openModal({
       eyebrow: a.category, title: a.title, meta: a.article_date || "", image: a.image_url,
-      contentHtml: textToParagraphs(a.content) || `<p>${a.excerpt || ""}</p>`,
+      previewHtml: `<p>${a.excerpt || ""}</p>`,
       link: a.link,
     });
   }
   function openProjectModal(p) {
+    currentItem = { type: "project", data: p };
     const tags = Array.isArray(p.tags) ? p.tags : [];
     openModal({
       eyebrow: p.category, title: p.title, meta: tags.join(" · "), image: p.image_url,
-      contentHtml: textToParagraphs(p.content) || `<p>${p.description || ""}</p>`,
+      previewHtml: `<p>${p.description || ""}</p>`,
       link: p.link,
     });
   }
   $("modalClose").addEventListener("click", closeModal);
   $("detailModal").addEventListener("click", (e) => { if (e.target.id === "detailModal") closeModal(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+  // FULL READ PAGE — a dedicated full-screen page (not a small popup) for the
+  // full write-up plus a photo gallery, with a Back button. Reached via the
+  // modal's "Read more" button — built for posts with lots of images.
+  function openDetailPageForCurrentItem() {
+    if (!currentItem) return;
+    const { type, data } = currentItem;
+    if (type === "article") openArticleDetailPage(data);
+    else openProjectDetailPage(data);
+  }
+  function openArticleDetailPage(a) {
+    openDetailPage({
+      eyebrow: a.category, title: a.title, meta: a.article_date || "", cover: a.image_url,
+      contentHtml: textToParagraphs(a.content) || `<p>${a.excerpt || ""}</p>`,
+      images: Array.isArray(a.images) ? a.images : [], link: a.link,
+    });
+  }
+  function openProjectDetailPage(p) {
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    openDetailPage({
+      eyebrow: p.category, title: p.title, meta: tags.join(" · "), cover: p.image_url,
+      contentHtml: textToParagraphs(p.content) || `<p>${p.description || ""}</p>`,
+      images: Array.isArray(p.images) ? p.images : [], link: p.link,
+    });
+  }
+  function openDetailPage({ eyebrow, title, meta, cover, contentHtml, images, link }) {
+    $("detailPageEyebrow").textContent = eyebrow || "";
+    $("detailPageTitle").textContent = title || "";
+    $("detailPageMeta").textContent = meta || "";
+    $("detailPageMedia").style.display = cover ? "block" : "none";
+    $("detailPageMedia").innerHTML = cover ? `<img src="${cover}" alt="${title || ""}">` : "";
+    $("detailPageContent").innerHTML = contentHtml || `<p>More detail coming soon.</p>`;
+    $("detailPageGallery").innerHTML = (images && images.length)
+      ? images.map(url => `<div class="detail-gallery-item"><img src="${url}" alt="${title || ""}" loading="lazy"></div>`).join("")
+      : "";
+    $("detailPageActions").innerHTML = (link && link !== "#")
+      ? `<a class="btn ghost" href="${link}" target="_blank" rel="noopener">${ICON_EXTERNAL}View original / external link</a>`
+      : "";
+    $("detailPage").classList.add("open");
+    document.body.style.overflow = "hidden";
+    $("detailPage").scrollTop = 0;
+  }
+  function closeDetailPage() {
+    $("detailPage").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  $("detailBackBtn").addEventListener("click", closeDetailPage);
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if ($("detailPage").classList.contains("open")) closeDetailPage();
+    else closeModal();
+  });
 
   // HERO
   $("heroBadgeText").textContent = profile.badge_text || "";
   $("heroName").innerHTML = (profile.name || "").replace(/\s(\S+)$/, ' <span class="grad">$1</span>');
   $("heroTagline").textContent = profile.tagline || "";
-  $("heroMeta").innerHTML = `<span>📍 ${profile.location || ""}</span><span>✉️ ${profile.email || ""}</span><span>💼 ${profile.role || ""}</span>`;
+  $("heroMeta").innerHTML = `<span>${ICON_PIN}${profile.location || ""}</span><span>${ICON_MAIL}${profile.email || ""}</span><span>${ICON_BRIEFCASE}${profile.role || ""}</span>`;
   const heroImg = profile.hero_image || profile.photo;
   $("heroPhoto").classList.toggle("is-placeholder", !heroImg);
   if (heroImg) { $("heroPhoto").innerHTML = `<img src="${heroImg}" alt="${profile.name || ""}">`; }
@@ -130,7 +192,10 @@ function render({ profile, about, stats, experience, companies, projects, articl
   `).join("");
 
   // PRESS STRIP (home)
-  $("pressNames").innerHTML = companies.map(c => `<span class="press-chip">${c.name}</span>`).join("");
+  $("pressNames").innerHTML = companies.map(c => c.logo_url
+    ? `<span class="press-chip has-logo"><img src="${c.logo_url}" alt="${c.name}"></span>`
+    : `<span class="press-chip">${c.name}</span>`
+  ).join("");
 
   // FEED — recent writing (home)
   $("homeFeed").innerHTML = articles.slice(0,3).map((a,i) => `

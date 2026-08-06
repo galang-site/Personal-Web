@@ -68,7 +68,7 @@
   .tab-btn:hover{color:var(--ink);}
   .tab-btn.active{color:#fff;background:var(--ink);}
   .nav-cta{display:flex;align-items:center;gap:8px;}
-  .nav-toggle{display:none;font-size:20px;color:var(--ink);padding:8px 12px;}
+  .nav-toggle{display:none;color:var(--ink);padding:8px 12px;align-items:center;justify-content:center;}
 
   @media (max-width:960px){
     .tabs{position:fixed;top:88px;left:20px;right:20px;background:var(--surface);border-radius:20px;
@@ -76,7 +76,7 @@
       transition:.25s ease;box-shadow:var(--shadow-md);border:1px solid var(--line);}
     .tabs.open{transform:translateY(0);}
     .tab-btn{text-align:left;}
-    .nav-toggle{display:block;}
+    .nav-toggle{display:flex;}
     .nav-cta .btn.ghost{display:none;}
   }
 
@@ -147,6 +147,8 @@
   .press-names{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;flex:1;}
   @media (max-width:700px){.press-names{justify-content:flex-start;}}
   .press-chip{padding:8px 16px;border-radius:999px;background:var(--bg-soft);font-weight:700;font-size:13px;color:var(--ink-soft);}
+  .press-chip.has-logo{padding:6px 18px;display:flex;align-items:center;}
+  .press-chip.has-logo img{height:24px;width:auto;max-width:120px;object-fit:contain;}
 
   .feed-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:20px;}
   @media (max-width:900px){.feed-grid{grid-template-columns:1fr;}}
@@ -399,6 +401,19 @@
   width:100%;padding:9px 10px;border-radius:8px;border:1px dashed var(--line);background:var(--bg);font-size:12.5px;
 }
 
+/* Multi-image gallery upload field (admin) */
+.gallery-field{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+.gallery-field:empty{display:none;}
+.gallery-thumb{width:80px;height:80px;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--line);background:var(--bg-soft);}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover;}
+.gallery-remove{
+  position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:none;
+  background:rgba(21,20,38,.7);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.field .gallery-field + input[type="file"]{
+  width:100%;padding:9px 10px;border-radius:8px;border:1px dashed var(--line);background:var(--bg);font-size:12.5px;
+}
+
 /* Public site: real images replace the gradient placeholder when set */
 .card-media.has-image, .feed-media.has-image, .spotlight-media.has-image{
   background:none;position:relative;overflow:hidden;
@@ -432,9 +447,32 @@
 .modal-body h2{font-size:26px;margin:8px 0 10px;line-height:1.25;}
 .modal-meta{font-size:13px;color:var(--ink-faint);margin-bottom:18px;}
 .modal-content p{font-size:15px;line-height:1.75;color:var(--ink-soft);margin:0 0 16px;}
-.modal-actions{margin-top:8px;}
+.modal-actions{margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;}
 @media (max-width:640px){
   .modal-overlay{padding:0;}
   .modal-box{border-radius:0;min-height:100%;}
   .modal-body{padding:24px 20px 28px;}
 }
+
+/* FULL READ PAGE — full-screen view for a project/article with gallery */
+.detail-page{
+  display:none;position:fixed;inset:0;background:var(--bg);z-index:250;overflow-y:auto;
+}
+.detail-page.open{display:block;}
+.detail-page-inner{max-width:760px;margin:0 auto;padding:32px 28px 90px;}
+.detail-back{margin-bottom:20px;}
+.detail-page-media{
+  width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));margin-bottom:28px;
+}
+.detail-page-media img{width:100%;height:100%;object-fit:cover;display:block;}
+.detail-page-body h1{font-size:clamp(26px,4vw,36px);line-height:1.2;margin:10px 0 12px;}
+.detail-page-meta{font-size:13.5px;color:var(--ink-faint);margin-bottom:26px;}
+.detail-page-content p{font-size:16px;line-height:1.8;color:var(--ink-soft);margin:0 0 18px;}
+.detail-page-gallery{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:28px 0;
+}
+.detail-gallery-item{border-radius:12px;overflow:hidden;aspect-ratio:4/3;background:var(--bg-soft);}
+.detail-gallery-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.detail-page-actions{margin-top:16px;}
+@media (max-width:640px){.detail-page-inner{padding:24px 20px 70px;}}
