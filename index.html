@@ -3,8 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Galang Nur Aji Pamungkas — Cost Estimating Coordinator</title>
-<meta name="description" content="Personal site — EPCC cost estimation, project work, leadership, and knowledge sharing.">
+<title>Galang Nur Aji Pamungkas — Cost Estimating Coordinator | EPC & Project Management</title>
+<meta name="description" content="Galang Nur Aji Pamungkas — Cost Estimating Coordinator at PT Wijaya Karya (WIKA), specializing in EPC cost estimation, project execution, and moving toward project & business management leadership.">
+<link rel="canonical" href="https://galangnuraji.my.id/">
+
+<!-- Open Graph / social preview -->
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Galang Nur Aji Pamungkas — Cost Estimating Coordinator">
+<meta property="og:description" content="EPC cost estimation, project work, leadership, and knowledge sharing.">
+<meta property="og:url" content="https://galangnuraji.my.id/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Galang Nur Aji Pamungkas — Cost Estimating Coordinator">
+<meta name="twitter:description" content="EPC cost estimation, project work, leadership, and knowledge sharing.">
+
+<!-- Structured data so Google understands this page is a personal profile -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Galang Nur Aji Pamungkas",
+  "url": "https://galangnuraji.my.id/",
+  "jobTitle": "Cost Estimating Coordinator",
+  "worksFor": {
+    "@type": "Organization",
+    "name": "PT Wijaya Karya (WIKA)"
+  },
+  "description": "EPC Cost Estimating Coordinator specializing in project cost estimation, execution, and moving toward project & business management leadership."
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -222,6 +249,26 @@
       <div class="detail-page-content" id="detailPageContent"></div>
       <div class="detail-page-gallery" id="detailPageGallery"></div>
       <div class="detail-page-actions" id="detailPageActions"></div>
+
+      <!-- COMMENTS — shown for Writing/Knowledge Sharing posts only. New
+           comments are held for moderation in /admin before they appear. -->
+      <div class="detail-page-comments" id="detailPageComments" style="display:none;">
+        <h3>Comments <span id="commentsCount"></span></h3>
+        <div class="comments-list" id="commentsList"></div>
+        <form class="comment-form" id="commentForm">
+          <h4>Leave a comment</h4>
+          <div class="comment-form-row">
+            <input id="commentName" placeholder="Name *" required>
+            <input id="commentCompany" placeholder="Company (optional)">
+          </div>
+          <input id="commentEmail" type="email" placeholder="Email (not shown publicly)">
+          <textarea id="commentMessage" placeholder="Write your comment…" required></textarea>
+          <div class="comment-form-actions">
+            <button type="submit" class="btn primary" id="commentSubmitBtn">Post comment</button>
+            <span class="comment-form-status" id="commentFormStatus"></span>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

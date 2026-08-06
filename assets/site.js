@@ -5,6 +5,10 @@
 const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
 const $ = (id) => document.getElementById(id);
+// Comments are public-submitted text, so unlike the rest of this file (which
+// trusts admin-authored content), anything a visitor typed must be escaped
+// before going into innerHTML.
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const initials = (name) => (name || "").split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 // Inline SVG icons (no emoji) used across the public site.
 const ICON_PIN = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
@@ -167,6 +171,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
       contentHtml: html || `<p>${a.excerpt || ""}</p>`,
       images: remaining, link: a.link,
     });
+    showCommentsForArticle(a.id);
   }
   function openProjectDetailPage(p) {
     const tags = Array.isArray(p.tags) ? p.tags : [];
@@ -177,6 +182,8 @@ function render({ profile, about, stats, experience, companies, projects, articl
       contentHtml: html || `<p>${p.description || ""}</p>`,
       images: remaining, link: p.link,
     });
+    // Comments are a Writing/Knowledge Sharing feature only — projects don't show them.
+    hideComments();
   }
   function openDetailPage({ eyebrow, title, meta, cover, contentHtml, images, link }) {
     $("detailPageEyebrow").textContent = eyebrow || "";
@@ -204,6 +211,73 @@ function render({ profile, about, stats, experience, companies, projects, articl
     if (e.key !== "Escape") return;
     if ($("detailPage").classList.contains("open")) closeDetailPage();
     else closeModal();
+  });
+
+  // COMMENTS — public can post a comment (name/company/email/message) on an
+  // article's full read page; it stays hidden until approved from /admin.
+  // Admin replies show inline underneath the comment they answer.
+  let currentCommentArticleId = null;
+  const formatCommentDate = (iso) => {
+    try { return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }); }
+    catch (e) { return ""; }
+  };
+  function commentItemHtml(c, repliesByParent) {
+    const replies = repliesByParent[c.id] || [];
+    return `
+      <div class="comment-item ${c.is_admin ? "is-admin" : ""}">
+        <div class="comment-head">
+          <span class="comment-name">${esc(c.name)}</span>
+          ${c.is_admin ? `<span class="comment-badge">Admin</span>` : ""}
+          ${c.company ? `<span class="comment-company">${esc(c.company)}</span>` : ""}
+          <span class="comment-date">${formatCommentDate(c.created_at)}</span>
+        </div>
+        <div class="comment-message">${esc(c.message)}</div>
+        ${replies.length ? `<div class="comment-replies">${replies.map(r => commentItemHtml(r, {})).join("")}</div>` : ""}
+      </div>`;
+  }
+  function renderComments(list) {
+    const top = list.filter(c => !c.parent_id);
+    const repliesByParent = {};
+    list.filter(c => c.parent_id).forEach(c => { (repliesByParent[c.parent_id] = repliesByParent[c.parent_id] || []).push(c); });
+    $("commentsList").innerHTML = top.map(c => commentItemHtml(c, repliesByParent)).join("")
+      || `<div class="comments-empty">Belum ada komentar — jadi yang pertama berkomentar!</div>`;
+    $("commentsCount").textContent = list.length ? `(${list.length})` : "";
+  }
+  async function loadArticleComments(articleId) {
+    $("commentsList").innerHTML = `<div class="comments-empty">Memuat komentar…</div>`;
+    const { data, error } = await sb.from("comments").select("*")
+      .eq("article_id", articleId).eq("is_approved", true).order("created_at", { ascending: true });
+    renderComments(error ? [] : (data || []));
+  }
+  function showCommentsForArticle(articleId) {
+    currentCommentArticleId = articleId;
+    $("detailPageComments").style.display = "block";
+    $("commentFormStatus").textContent = "";
+    $("commentForm").reset();
+    loadArticleComments(articleId);
+  }
+  function hideComments() {
+    currentCommentArticleId = null;
+    $("detailPageComments").style.display = "none";
+  }
+  $("commentForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentCommentArticleId) return;
+    const name = $("commentName").value.trim();
+    const company = $("commentCompany").value.trim();
+    const email = $("commentEmail").value.trim();
+    const message = $("commentMessage").value.trim();
+    if (!name || !message) { $("commentFormStatus").textContent = "Nama dan komentar wajib diisi."; return; }
+    $("commentSubmitBtn").disabled = true;
+    $("commentFormStatus").textContent = "Mengirim…";
+    const { error } = await sb.from("comments").insert({
+      article_id: currentCommentArticleId, name, company, email, message,
+      is_admin: false, is_approved: false,
+    });
+    $("commentSubmitBtn").disabled = false;
+    if (error) { $("commentFormStatus").textContent = "Gagal mengirim: " + error.message; return; }
+    $("commentForm").reset();
+    $("commentFormStatus").textContent = "Terima kasih! Komentarmu akan tampil setelah disetujui admin.";
   });
 
   // HERO

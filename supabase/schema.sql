@@ -109,6 +109,24 @@ create table if not exists testimonials (
   sort_order int default 0
 );
 
+-- ---------- COMMENTS (on articles/writing) ----------
+-- Visitor-submitted comments start unapproved (is_approved = false) and only
+-- appear on the public site once approved from /admin — that's the
+-- moderation step. Admin replies (is_admin = true) are auto-approved and can
+-- be threaded under a visitor comment via parent_id.
+create table if not exists comments (
+  id bigint generated always as identity primary key,
+  article_id bigint references articles(id) on delete cascade,
+  parent_id bigint references comments(id) on delete cascade,
+  name text not null,
+  company text default '',
+  email text default '',
+  message text not null,
+  is_admin boolean default false,
+  is_approved boolean default false,
+  created_at timestamptz default now()
+);
+
 -- ---------- Backfill columns for projects/tables created before this update ----------
 alter table projects add column if not exists image_url text default '';
 alter table articles add column if not exists image_url text default '';
@@ -150,6 +168,34 @@ begin
     execute format('create policy "auth_delete_%1$s" on %1$s for delete using (auth.role() = ''authenticated'');', t);
   end loop;
 end $$;
+
+-- ---------- COMMENTS — different rules from the tables above ----------
+-- Public can only ever SEE approved comments, but can INSERT a new
+-- (unapproved, non-admin) comment of their own — that's how the public
+-- comment form on the site works. Only logged-in admin can see everything
+-- (including pending ones, to moderate them), approve/edit, delete, or post
+-- an admin reply.
+alter table comments enable row level security;
+
+drop policy if exists "comments_public_read_approved" on comments;
+drop policy if exists "comments_public_insert" on comments;
+drop policy if exists "comments_admin_read_all" on comments;
+drop policy if exists "comments_admin_update" on comments;
+drop policy if exists "comments_admin_delete" on comments;
+drop policy if exists "comments_admin_insert" on comments;
+
+create policy "comments_public_read_approved" on comments
+  for select using (is_approved = true);
+create policy "comments_public_insert" on comments
+  for insert with check (is_admin = false and is_approved = false);
+create policy "comments_admin_read_all" on comments
+  for select using (auth.role() = 'authenticated');
+create policy "comments_admin_update" on comments
+  for update using (auth.role() = 'authenticated');
+create policy "comments_admin_delete" on comments
+  for delete using (auth.role() = 'authenticated');
+create policy "comments_admin_insert" on comments
+  for insert with check (auth.role() = 'authenticated');
 
 -- =====================================================================
 -- STORAGE — a public bucket for project/article images, uploaded from

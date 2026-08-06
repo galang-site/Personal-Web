@@ -164,7 +164,93 @@ const SECTIONS = {
     ],
     rowTitle: r => r.name, rowSubtitle: r => r.role,
   }),
+  comments: renderCommentsSection,
 };
+
+/* ---------- COMMENTS (moderation) ----------
+   Visitor comments on Writing posts land here unapproved — nothing shows on
+   the public site until you hit Approve. You can also reply (posted as an
+   admin comment, auto-approved, shown nested under the original) or delete. */
+async function renderCommentsSection() {
+  adminMain.innerHTML = `
+    <div class="admin-header">
+      <div><h2>Comments</h2><p>Comments left on your Writing / Knowledge Sharing posts. New ones stay hidden from the public site until you approve them here.</p></div>
+    </div>
+    <div class="admin-card" id="commentsArea">Loading…</div>`;
+  const [{ data: comments, error }, { data: profile }] = await Promise.all([
+    sb.from("comments").select("*, articles(title)").order("created_at", { ascending: false }),
+    sb.from("profile").select("name").eq("id", 1).single(),
+  ]);
+  if (error) { $("commentsArea").innerHTML = `<div class="empty-state">${esc(error.message)}</div>`; return; }
+  renderCommentsList(comments || [], (profile && profile.name) ? profile.name : "Admin");
+}
+
+function renderCommentsList(list, replyAuthorName) {
+  const area = $("commentsArea");
+  if (!list.length) { area.innerHTML = `<div class="empty-state">No comments yet.</div>`; return; }
+  area.innerHTML = list.map(c => `
+    <div class="admin-comment-row ${c.is_approved ? "" : "pending"}">
+      <div class="admin-comment-meta">
+        <span class="admin-comment-article">${esc(c.articles ? c.articles.title : "(article removed)")}</span>
+        ${c.is_admin ? `<span class="comment-badge">Reply</span>` : ""}
+        ${!c.is_approved ? `<span class="pending-badge">Pending approval</span>` : ""}
+      </div>
+      <div class="admin-comment-author">${esc(c.name)}${c.company ? " · " + esc(c.company) : ""}${c.email ? " · " + esc(c.email) : ""}</div>
+      <div class="admin-comment-message">${esc(c.message)}</div>
+      <div class="admin-comment-actions">
+        ${!c.is_admin ? `<button class="icon-btn" data-approve="${c.id}" data-val="${c.is_approved ? "false" : "true"}">${c.is_approved ? "Unapprove" : "Approve"}</button>` : ""}
+        ${!c.is_admin ? `<button class="icon-btn" data-reply="${c.id}">Reply</button>` : ""}
+        <button class="icon-btn danger" data-delete-comment="${c.id}">Delete</button>
+      </div>
+      ${!c.is_admin ? `
+      <div class="admin-comment-reply-form" id="reply_${c.id}" style="display:none;">
+        <textarea id="reply_text_${c.id}" placeholder="Write your reply…"></textarea>
+        <button class="btn primary" data-send-reply="${c.id}">Send reply</button>
+      </div>` : ""}
+    </div>
+  `).join("");
+
+  area.querySelectorAll("[data-approve]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const val = btn.dataset.val === "true";
+      const { error } = await sb.from("comments").update({ is_approved: val }).eq("id", btn.dataset.approve);
+      if (error) { alert("Error: " + error.message); return; }
+      toast(val ? "Approved" : "Unapproved");
+      renderCommentsSection();
+    });
+  });
+  area.querySelectorAll("[data-delete-comment]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Delete this comment? This can't be undone.")) return;
+      const { error } = await sb.from("comments").delete().eq("id", btn.dataset.deleteComment);
+      if (error) { alert("Error: " + error.message); return; }
+      toast("Deleted");
+      renderCommentsSection();
+    });
+  });
+  area.querySelectorAll("[data-reply]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const box = $(`reply_${btn.dataset.reply}`);
+      box.style.display = box.style.display === "none" ? "block" : "none";
+    });
+  });
+  area.querySelectorAll("[data-send-reply]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.sendReply;
+      const textEl = $(`reply_text_${id}`);
+      const text = textEl.value.trim();
+      if (!text) return;
+      const parent = list.find(c => String(c.id) === String(id));
+      const { error } = await sb.from("comments").insert({
+        article_id: parent.article_id, parent_id: id, name: replyAuthorName,
+        message: text, is_admin: true, is_approved: true,
+      });
+      if (error) { alert("Error: " + error.message); return; }
+      toast("Reply posted");
+      renderCommentsSection();
+    });
+  });
+}
 
 /* ---------- PROFILE (singleton) ---------- */
 async function renderProfileSection() {
