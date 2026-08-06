@@ -49,7 +49,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
     { id: "about", label: "About" },
     { id: "experience", label: "Experience" },
     { id: "companies", label: "Companies" },
-    { id: "projects", label: "Work" },
+    { id: "projects", label: "Portfolio" },
     { id: "articles", label: "Writing" },
     { id: "contact", label: "Contact" },
   ];
@@ -173,6 +173,9 @@ function render({ profile, about, stats, experience, companies, projects, articl
   $("newsletterText").textContent = profile.newsletter_text || "";
 
   // ABOUT
+  const aboutImg = profile.about_photo || profile.photo || profile.hero_image;
+  if (aboutImg) { $("aboutPhoto").innerHTML = `<img src="${aboutImg}" alt="${profile.name || ""}">`; }
+  else { const initEl = $("aboutPhoto").querySelector(".initials"); if (initEl) initEl.textContent = profile.initials || initials(profile.name); }
   const paragraphs = Array.isArray(about.paragraphs) ? about.paragraphs : [];
   $("aboutText").innerHTML = paragraphs.map(p=>`<p>${p}</p>`).join("");
   const tagList = (arr) => (Array.isArray(arr) ? arr : []).map(s=>`<span class="tag">${s}</span>`).join("");
@@ -202,7 +205,7 @@ function render({ profile, about, stats, experience, companies, projects, articl
   // COMPANIES
   $("companiesGrid").innerHTML = companies.map(c => `
     <div class="company-card">
-      <div class="company-avatar">${initials(c.name)}</div>
+      <div class="company-avatar${c.logo_url ? ' has-logo' : ''}">${c.logo_url ? `<img src="${c.logo_url}" alt="${c.name}">` : initials(c.name)}</div>
       <div><div class="name">${c.name}</div><div class="role">${c.role || ""}</div></div>
     </div>
   `).join("") || `<div class="empty-state">No companies added yet.</div>`;

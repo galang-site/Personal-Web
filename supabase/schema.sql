@@ -15,6 +15,7 @@ create table if not exists profile (
   initials text default 'GP',
   photo text default '',
   hero_image text default '',
+  about_photo text default '',
   role text default '',
   badge_text text default '',
   tagline text default '',
@@ -66,6 +67,7 @@ create table if not exists companies (
   id bigint generated always as identity primary key,
   name text not null,
   role text default '',
+  logo_url text default '',
   sort_order int default 0
 );
 
@@ -109,6 +111,8 @@ alter table projects add column if not exists image_url text default '';
 alter table articles add column if not exists image_url text default '';
 alter table projects add column if not exists content text default '';
 alter table articles add column if not exists content text default '';
+alter table profile add column if not exists about_photo text default '';
+alter table companies add column if not exists logo_url text default '';
 
 -- =====================================================================
 -- ROW LEVEL SECURITY

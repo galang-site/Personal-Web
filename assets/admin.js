@@ -118,6 +118,7 @@ const SECTIONS = {
     fields: [
       { key: "name", label: "Company name", type: "text" },
       { key: "role", label: "Your role / relationship", type: "text", placeholder: "e.g. Employer — Cost Estimator" },
+      { key: "logo_url", label: "Company logo (optional — falls back to initials if left empty)", type: "image", folder: "companies" },
       { key: "sort_order", label: "Order", type: "number" },
     ],
     rowTitle: r => r.name, rowSubtitle: r => r.role,
@@ -211,13 +212,24 @@ async function renderProfileSection() {
         </div>
       </div>
     </div>
+    <div class="field">
+      <label>About tab photo</label>
+      <input type="hidden" id="f_about_photo" value="${esc(p.about_photo)}">
+      <div class="image-field">
+        <div class="image-preview" id="f_about_photo_preview">${p.about_photo ? `<img src="${esc(p.about_photo)}" alt="">` : `<span>No image</span>`}</div>
+        <div style="flex:1;min-width:0;">
+          <input type="file" id="f_about_photo_file" accept="image/*">
+          <div class="hint" id="f_about_photo_status">${p.about_photo ? "Choose a new file to replace the current photo." : "A separate photo shown only on the About tab (falls back to Profile photo if left empty)."}</div>
+        </div>
+      </div>
+    </div>
     <hr style="border:none;border-top:1px solid var(--line);margin:20px 0;">
     <div class="field"><label>Contact section text</label><textarea id="f_contact_text">${esc(p.contact_text)}</textarea></div>
     <div class="field"><label>Newsletter title</label><input id="f_newsletter_title" value="${esc(p.newsletter_title)}"></div>
     <div class="field"><label>Newsletter text</label><textarea id="f_newsletter_text">${esc(p.newsletter_text)}</textarea></div>
     <div class="form-actions"><button class="btn primary" id="saveProfileBtn">Save Profile</button></div>
   `;
-  [{ key: "photo", folder: "profile" }, { key: "hero_image", folder: "profile" }].forEach(({ key, folder }) => {
+  [{ key: "photo", folder: "profile" }, { key: "hero_image", folder: "profile" }, { key: "about_photo", folder: "profile" }].forEach(({ key, folder }) => {
     const fileInput = $(`f_${key}_file`);
     fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
@@ -253,6 +265,7 @@ async function renderProfileSection() {
       badge_text: $("f_badge_text").value, tagline: $("f_tagline").value, location: $("f_location").value,
       resume_url: $("f_resume_url").value, email: $("f_email").value, phone: $("f_phone").value,
       linkedin: $("f_linkedin").value, photo: $("f_photo").value, hero_image: $("f_hero_image").value,
+      about_photo: $("f_about_photo").value,
       contact_text: $("f_contact_text").value, newsletter_title: $("f_newsletter_title").value,
       newsletter_text: $("f_newsletter_text").value,
     };
