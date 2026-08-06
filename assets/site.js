@@ -59,6 +59,8 @@ function render({ profile, about, stats, experience, companies, projects, articl
   ];
   $("tabs").innerHTML = tabs.map((t,i) => `<button class="tab-btn ${i===0?'active':''}" data-tab="${t.id}">${t.label}</button>`).join("");
   function goTo(id){
+    closeDetailPage();
+    closeModal();
     document.querySelectorAll(".tabpanel").forEach(p => p.classList.toggle("active", p.dataset.panel === id));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
     document.getElementById("tabs").classList.remove("open");
@@ -226,11 +228,31 @@ function render({ profile, about, stats, experience, companies, projects, articl
     `;
   })();
 
-  // QUOTE (home)
+  // QUOTE (home) — auto-rotates through every testimonial if there's more than one.
   (function(){
-    const t = testimonials[0];
-    if(!t) { $("homeQuote").innerHTML = ""; return; }
-    $("homeQuote").innerHTML = `<blockquote>"${t.quote}"</blockquote><cite>${t.name} — ${t.role || ""}</cite>`;
+    if (!testimonials.length) { $("homeQuote").innerHTML = ""; return; }
+    let idx = 0;
+    function renderQuote(){
+      const t = testimonials[idx];
+      $("homeQuote").innerHTML = `
+        <div class="quote-inner">
+          <blockquote>"${t.quote}"</blockquote>
+          <cite>${t.name} — ${t.role || ""}</cite>
+        </div>
+        ${testimonials.length > 1 ? `<div class="quote-dots">${testimonials.map((_,i)=>`<span class="quote-dot ${i===idx?'active':''}"></span>`).join("")}</div>` : ""}
+      `;
+    }
+    renderQuote();
+    if (testimonials.length > 1) {
+      setInterval(() => {
+        const inner = $("homeQuote").querySelector(".quote-inner");
+        if (inner) inner.classList.add("fade-out");
+        setTimeout(() => {
+          idx = (idx + 1) % testimonials.length;
+          renderQuote();
+        }, 300);
+      }, 5000);
+    }
   })();
 
   // NEWSLETTER (home)
